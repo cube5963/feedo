@@ -26,7 +26,7 @@ export default function SignIn(){
                 <h1>Googleアカウントでサインイン</h1>
                 {/*GoogleAuthでグーグルアカウントでログインできるようにする。*/}
             </Paper>
-            <a href="/sidnup">アカウントをお持ち出ない方はこちら</a>
+            <a href="/signup">アカウントをお持ち出ない方はこちら</a>
         </div>
     );
 }
