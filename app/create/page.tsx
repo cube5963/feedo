@@ -29,15 +29,18 @@ export default function Create(){
                     <Tab label="設定" value="3"/>
                 </TabList>
                 <TabPanel value="1">
-                    <Paper>
+                    <Paper className="title">
                         <TextField
-                            label="質問"
+                            label="タイトル"//ここをUseStateで変更可能にする
                             multiline
                             rows={4}
                             fullWidth
                         />
-                        <IconButton>+</IconButton>
                     </Paper>
+                    {/*
+                    Usestateで変化させた値の数、以下のPaperを表示させる。
+                    最低一つまで残るようにする。
+                    */}
                 </TabPanel>
                 <TabPanel value="2">
                     <Paper>
