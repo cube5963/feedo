@@ -6,7 +6,7 @@ export default function Webnavi(){
     return(
         <div>
             <ul>
-                <li>Feedo</li>
+                <li><a href="/">FEEDO</a></li>
                 <li>機能</li>
                 <li>活用例</li>
                 <li>プランと料金</li>
