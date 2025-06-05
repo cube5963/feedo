@@ -1,13 +1,14 @@
 import {
     autocompleteClasses,
     Button,
+    AppBar,
 }from "@mui/material";
 import Image from "next/image";
 import logo from "../../public/logo.png";
 
 export default function Webnavi(){
     return(
-        <div 
+        <AppBar
         style={{
             display: "flex",
             justifyContent: "space-between", 
@@ -84,6 +85,6 @@ export default function Webnavi(){
                     </Button>
                 </li>
             </ul>
-        </div>
+        </AppBar>
     );
 }
