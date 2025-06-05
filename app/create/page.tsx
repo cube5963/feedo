@@ -140,7 +140,7 @@ function TabPanelContent({ value }: { value: string }) {
                             multiline={false}
                             inputRef={input => {
                                 if (input) {
-                                    input.onmousedown = e => {
+                                    input.onmousedown = (e: MouseEvent) => {
                                         setTimeout(() => input.select(), 0);
                                     };
                                 }
@@ -188,7 +188,6 @@ function TabPanelContent({ value }: { value: string }) {
 
 export default function Create() {
     const [value, setValue] = useState("1");
-    const [open, setOpen] = useState(false);
 
     const handleChange = (event: React.SyntheticEvent, newValue: string) => {
         setValue(newValue);
