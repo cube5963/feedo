@@ -43,8 +43,8 @@ export default function SignIn(){
                     border: "1px solid #ccc",
                 }}/>
                 <br />
-                <Button variant="contained">a</Button>
-                <Button variant="contained">b</Button>
+                <Button variant="contained">ログイン</Button>
+                <Button variant="contained" style = {{marginTop:"10px",backgroundColor:"white",color:"black"}}>パスワードをお忘れですか？</Button>
                 
             </Paper>
             <Paper>
