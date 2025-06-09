@@ -1,78 +1,95 @@
+'use client'; // クライアントコンポーネント指定
+
 import {
-    Card,
-    Button,
-    Box,
-   ImageList ,
-   ImageListItem,
-   ImageListItemBar
-} from "@mui/material";
-
-const itemData = [
-  {img: 'https://freeillust-classic.com/wp-content/uploads/0209000219.png',
-  storename:'関と右崎旅館',
-  author:'ヴィットー',
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Button,
+  Avatar,
+  ButtonBase,
+} from '@mui/material';
+import { useRouter } from 'next/navigation'; // App Router 用
+// アンケートデータ型
+type SurveyItem = {
+  img: string;
+  title: string;
+  date: string;
+  answers: number;
+  id: string;
+};
+const surveyData: SurveyItem[] = [
+  {
+    img: 'https://www.tobutoptours.co.jp/clubjtobuto/common/pdf/jrhotel.jpg',
+    title: 'ホテルフィードお客様アンケート',
+    date: '2025/2/28',
+    answers: 37,
+    id: 'hotel-feedo',
   },
   {
-    img: 'https://t3.ftcdn.net/jpg/00/84/09/18/360_F_84091840_8wn1lAJ7jIuYRczt4PRqrrZUoAOoPVrO.jpg',
-    storename:'右崎の化身ホテル',
-    author:'うー',
+    img: 'https://cdn.4travel.jp/img/tcs/t/album/src/11/27/52/src_11275261.jpg?updated_at=1554462940',
+    title: '府居土旅館お客様アンケート',
+    date: '2024/12/12',
+    answers: 507,
+    id: 'fukyo-ryokan',
   },
   {
-    img: 'https://www.pakutaso.com/shared/img/thumb/OMG150918280I9A6410_TP_V.jpg',
-    storename:'関を許さない',
-    author:'う？',
+    img: 'https://cdn.pixabay.com/photo/2015/09/18/19/03/cabin-944108_1280.jpg',
+    title: 'cottage FEEDOお客様アンケート',
+    date: '2024/12/10',
+    answers: 7,
+    id: 'cottage-feedo',
   },
-]
+];
+export default function Project() {
+  const router = useRouter();
 
-export default function Project(){
-    return(
-        
-        <div>   
-            ここにアカウントごとの管理画面を作成する。
-            <div className="newCreate">
-                <Button size="large">
-                    <Card sx = {{minWidth:130,fontSize:80}}>+</Card>
-                </Button>
-                <span>新規作成</span>
-            </div>
-            <div className="management">
+  const handleClick = (id: string) => {
+    // 動的ページ遷移（仮）
+    router.push('/survey/${id}');
+  };
 
-                  <ImageList sx={{ width: '500', height: '450' }}>
-                    {itemData.map((item) => (
-                        <ImageListItem key={item.img}>
-                        <img
-                            srcSet={`${item.img}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                            src={`${item.img}?w=248&fit=crop&auto=format`}
-                            alt={item.storename}
-                            loading="lazy"
-                        />           <ImageListItemBar
-                            title={<span>{item.storename}お客様アンケート</span>}
-                            subtitle={<span>by: {item.author}</span>}
-                            position="below"
-                        />
-                        </ImageListItem>
-                    ))}
-                    </ImageList>
+  return (
+    <Box sx={{ maxWidth: 500, margin: 'auto', padding: 2 }}>
+      {/* 新規作成 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Button variant="outlined" sx={{ width: 100, height: 100 }}>
+          <Typography variant="h3">＋</Typography>
+        </Button>
+        <Box sx={{ ml: 2 }}>
+          <Typography variant="h6">新規作成</Typography>
+          <Typography variant="body2" color="text.secondary">
+            新しいアンケートの作成
+          </Typography>
+        </Box>
+      </Box>
 
-                <div className="store">
-                    <Card>店舗画像</Card>
-                    <span>店舗名</span>
-                    <span>最終編集日 xxxx/xx/xx </span>
-                    <span>回答数 x 件</span>
-                </div>
-                <div className="store">
-                    <Card>店舗画像</Card>
-                    <span>店舗名</span>
-                    <span>最終編集日 xxxx/xx/xx </span>
-                    <span>回答数 x 件</span>
-                </div>
-                <div className="store">
-                    <Card>店舗画像</Card>
-                    <span>店舗名</span>
-                    <span>最終編集日 xxxx/xx/xx </span>
-                    <span>回答数 x 件</span>
-                </div>
-            </div>
-        </div>
-    );
+      {/* アンケート一覧 */}
+      {surveyData.map((item) => (
+        <ButtonBase
+          key={item.id}
+          onClick={() => handleClick(item.id)}
+          sx={{ width: '100%', mb: 2, textAlign: 'left', borderRadius: 1 }}
+        >
+          <Card sx={{ display: 'flex', width: '100%' }}>
+            <Avatar
+              variant="square"
+              src={item.img}
+              alt={item.title}
+              sx={{ width: 100, height: 100 }}
+            />
+            <CardContent>
+              <Typography variant="subtitle1">{item.title}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                最終編集日 {item.date}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                回答数 {item.answers}件
+              </Typography>
+            </CardContent>
+          </Card>
+        </ButtonBase>
+      ))}
+    </Box>
+  );
 }
