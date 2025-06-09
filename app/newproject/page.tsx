@@ -7,7 +7,7 @@ export default function NewProject(){
         <div>
             <h1>新規作成</h1>
             <h3>AIを使用しますか？</h3>
-            <Button href="/setup" variant="contained">使用します</Button>
+            <Button href="/setup" variant="contained">使用しません<span display="none">使用します</span></Button>
             <Button variant="outlined" color="inherit">使用しません</Button>
         </div>
     );
