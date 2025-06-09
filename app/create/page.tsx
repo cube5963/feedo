@@ -2,11 +2,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import logo from "../../public/logo.png";
+import Form from "../_components/form";
 import {
     Paper,
     TextField,
     Tab,
-    IconButton,
     Checkbox,
     Button,
     AppBar,
@@ -17,8 +17,6 @@ import {
     TabContext,
     TabList,
 } from "@mui/lab";
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import ShareIcon from '@mui/icons-material/Share';
@@ -140,13 +138,14 @@ function TabPanelContent({ value }: { value: string }) {
                             multiline={false}
                             inputRef={input => {
                                 if (input) {
-                                    input.onmousedown = e => {
+                                    input.onmousedown = (e: MouseEvent) => {
                                         setTimeout(() => input.select(), 0);
                                     };
                                 }
                             }}
                         />
                     </Paper>
+                    <Form/>
                 </TabPanel>
             );
             
@@ -188,7 +187,6 @@ function TabPanelContent({ value }: { value: string }) {
 
 export default function Create() {
     const [value, setValue] = useState("1");
-    const [open, setOpen] = useState(false);
 
     const handleChange = (event: React.SyntheticEvent, newValue: string) => {
         setValue(newValue);
@@ -234,7 +232,6 @@ export default function Create() {
                                 sx={{
                                     position: "relative",
                                     overflow: "hidden",
-                                    maxWidth: "95%",
                                     backgroundColor: "#fff",
                                     display: "flex",
                                     alignItems: "center",
@@ -253,11 +250,13 @@ export default function Create() {
                                         transition: "opacity 0.3s, transform 0.4s",
                                     }}
                                 >
-                                    <TabList onChange={handleChange} style={{ width: "100%" }}>
-                                        <Tab label="質問" value="1" style={{ flex: 1 }} />
-                                        <Tab label="統計" value="2" style={{ flex: 1 }} />
-                                        <Tab label="設定" value="3" style={{ flex: 1 }} />
-                                    </TabList>
+                                    <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                                        <TabList onChange={handleChange} style={{ width: "60%", minWidth: 300 }}>
+                                            <Tab label="質問" value="1" style={{ flex: 1 }} />
+                                            <Tab label="統計" value="2" style={{ flex: 1 }} />
+                                            <Tab label="設定" value="3" style={{ flex: 1 }} />
+                                        </TabList>
+                                    </Box>
                                 </Box>
                             </Box>
                             <TabPanelContent value={value} />

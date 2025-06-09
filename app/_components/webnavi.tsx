@@ -10,11 +10,12 @@ export default function Webnavi(){
     return(
         <AppBar
         style={{
+            position: "sticky",
             display: "flex",
             justifyContent: "space-between", 
             padding: "10px", 
-            margin: 0,
-            width: "auto",
+            marginBottom: "10px",
+            width: "100%",
             backgroundColor: "#fff", 
             borderBottom: "1px solid #ccc",
         }}>
