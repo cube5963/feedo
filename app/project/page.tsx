@@ -51,7 +51,7 @@ export default function Project() {
 
   return (
     <Box sx={{ maxWidth: 500, margin: 'auto', padding: 2 }}>
-      {/* 新規作成 */}
+      {/* 新規作成 /}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button variant="outlined" sx={{ width: 100, height: 100 }}>
           <Typography variant="h3">＋</Typography>
