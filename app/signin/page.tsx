@@ -17,6 +17,7 @@ export default function SignIn(){
                 alignItems: "center",
                 padding: "20px",
                 margin: "20px auto",
+                marginTop:"30px",
                 width: "60%",
                 height: "50%",
                 backgroundColor: "#fff",
@@ -43,15 +44,20 @@ export default function SignIn(){
                     border: "1px solid #ccc",
                 }}/>
                 <br />
-                <Button variant="contained">a</Button>
-                <Button variant="contained">b</Button>
-                
+                <Button variant="contained">ログイン</Button>
+                <a href="" style={{marginTop:"10px"}}>パスワードをお忘れですか？</a>
+                <a href="/signup" style={{marginTop:"10px"}}>アカウントをお持ち出ない方はこちら</a>
+                <Button variant = "outlined" startIcon = 
+                {<img src = "https://images-ext-1.discordapp.net/external/cPbexFq_vc92gA47x_BvRBqXQQkk0OlRugeuUNbcotg/https/developers.google.com/identity/images/g-logo.png?format=webp&quality=lossless&width=142&height=142"
+                style ={{width:"30px",height:"30px"}}/>}
+                style = {{width:"200px",height:"50px"}}>
+                    Sign in with Google
+                </Button>
             </Paper>
             <Paper>
                 <h1>Googleアカウントでサインイン</h1>
                 {/*GoogleAuthでグーグルアカウントでログインできるようにする。*/}
             </Paper>
-            <a href="/signup">アカウントをお持ち出ない方はこちら</a>
         </div>
     );
 }

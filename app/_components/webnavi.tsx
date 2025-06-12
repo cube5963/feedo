@@ -14,7 +14,6 @@ export default function Webnavi(){
             display: "flex",
             justifyContent: "space-between", 
             padding: "10px", 
-            marginBottom: "10px",
             width: "100%",
             backgroundColor: "#fff", 
             borderBottom: "1px solid #ccc",
