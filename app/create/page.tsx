@@ -70,7 +70,7 @@ function hideTooltip() {
     if (tooltip) tooltip.remove();
 }
 
-function Sidebar() {
+function Sidebar({ onAddForm }: { onAddForm: () => void }) {
     return (
         <Box
             sx={{
@@ -117,6 +117,7 @@ function Sidebar() {
                             onMouseEnter={e => showTooltip(e, label)}
                             onMouseMove={moveTooltip}
                             onMouseLeave={hideTooltip}
+                            onClick={label === "質問追加" ? onAddForm : undefined}
                         />
                     </Box>
                 ))}
@@ -130,7 +131,7 @@ function TabPanelContent({ value }: { value: string }) {
         case "1":
             return (
                 <TabPanel value="1">
-                    <Paper className="title">
+                    <Paper className="title" sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center', mb: 2 }}>
                         <TextField
                             label="タイトル"
                             fullWidth
@@ -143,6 +144,8 @@ function TabPanelContent({ value }: { value: string }) {
                                     };
                                 }
                             }}
+                            sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center' }}
+                            InputProps={{ style: { textAlign: 'center' } }}
                         />
                     </Paper>
                     <Form/>
@@ -187,10 +190,84 @@ function TabPanelContent({ value }: { value: string }) {
 
 export default function Create() {
     const [value, setValue] = useState("1");
+    const [forms, setForms] = useState<number[]>([0]);
+    const [formId, setFormId] = useState(1);
 
     const handleChange = (event: React.SyntheticEvent, newValue: string) => {
         setValue(newValue);
     };
+
+    const handleAddForm = () => {
+        setForms(prev => [...prev, formId]);
+        setFormId(id => id + 1);
+    };
+
+    const handleDeleteForm = (id: number) => {
+        setForms(prev => prev.filter(fid => fid !== id));
+    };
+
+    function TabPanelContent({ value }: { value: string }) {
+        switch (value) {
+            case "1":
+                return (
+                    <TabPanel value="1">
+                        <Paper className="title" sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center', mb: 2 }}>
+                            <TextField
+                                label="タイトル"
+                                fullWidth
+                                inputProps={{ maxLength: 100, style: { imeMode: "active" } }}
+                                multiline={false}
+                                inputRef={input => {
+                                    if (input) {
+                                        input.onmousedown = (e: MouseEvent) => {
+                                            setTimeout(() => input.select(), 0);
+                                        };
+                                    }
+                                }}
+                                sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center' }}
+                                InputProps={{ style: { textAlign: 'center' } }}
+                            />
+                        </Paper>
+                        {forms.map((id, idx) => (
+                            <Form key={id} showDelete={forms.length > 1} onDelete={() => handleDeleteForm(id)} />
+                        ))}
+                    </TabPanel>
+                );
+            case "2":
+                return (
+                    <TabPanel value="2">
+                        <Paper>
+                            <TextField
+                                label="統計"
+                                multiline
+                                rows={4}
+                                fullWidth
+                            />
+                        </Paper>
+                    </TabPanel>
+                );
+            case "3":
+                return (
+                    <TabPanel value="3">
+                        <Paper>
+                            <TextField
+                                label="設定"
+                                multiline
+                                rows={4}
+                                fullWidth
+                            />
+                            <Checkbox /><span>アンケートのテンプレート作成</span>
+                            <br />
+                            <Checkbox /><span>アンケートの要約とアドバイス</span>
+                            <br />
+                            <Checkbox /><span>アンケートの質問文の自動改善</span>
+                        </Paper>
+                    </TabPanel>
+                );
+            default:
+                return null;
+        }
+    }
 
     return (
         <div>
@@ -224,7 +301,7 @@ export default function Create() {
                 </a>
             </AppBar>
             <Box display="flex" flexDirection="row" width="100%">
-                {value === "1" && <Sidebar />}
+                {value === "1" && <Sidebar onAddForm={handleAddForm} />}
                 <Box flex={1} sx={{ transition: "margin-left 0.3s" }}>
                     <Box>
                         <TabContext value={value}>
