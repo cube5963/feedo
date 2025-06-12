@@ -25,11 +25,28 @@ export default function Templete(){
 
     return(
         isloading ? (
-        <div>
+        <div style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "20px",
+                margin: "20px auto",
+                marginTop:"30px",
+                width: "60%",
+                height: "50%",
+                backgroundColor: "#fff",
+                borderRadius: "10px",
+                border: "1px solid #ccc",
+            }}>
             <h1>テンプレート作成</h1>
             <h4>アンケートのタイトルと聞きたい内容、活用目的を記入してください。</h4>
             <h4>AIが最適なアンケートを作成します。</h4>
-            <Paper>
+            <Paper style={{
+                borderRadius: "10px",
+                border: "1px solid #ccc",
+                padding:"10px",
+            }}>
                 <TextField
                     label="アンケートのタイトル"
                     variant="outlined"
@@ -44,8 +61,10 @@ export default function Templete(){
                 />
             </Paper>
             <div>
-                <Button color="inherit">戻る</Button>
-                <Button variant="contained" onClick={OnPush}>次へ</Button>
+                <Button variant = "outlined"color="inherit"
+                style = {{marginTop:"20px",textAlign:"left"}}>戻る</Button>
+                <Button variant="contained" onClick={OnPush}
+                style = {{marginTop:"20px"}}>次へ</Button>
             </div>
         </div>
         ) : (
