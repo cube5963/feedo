@@ -5,13 +5,13 @@ import {
 } from "@mui/material";
 import Webnavi from "../_components/webnavi";
 import { createClient } from './../utils/supabase/server'
-import { cookies } from 'next/headers'
-import { Form, Input } from "antd";
 
-export default function SignUp() {
-    const cookieStore = cookies();
+export default async function SignUp() {
     const supabase = createClient();
 
+    const email = "";
+    const password = "";
+    
     return (
         <div>
             <Webnavi />
