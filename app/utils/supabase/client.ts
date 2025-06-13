@@ -1,5 +1,4 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { cookies } from 'next/headers'
 
 // Supabase クライアントを生成する関数
 export const createClient = () =>
