@@ -26,6 +26,7 @@ export default function SignUp() {
             email,
             password,
         });
+
         if (error) {
             alert(`エラーが発生しました: ${error.message}`);
         } else {
@@ -60,6 +61,7 @@ export default function SignUp() {
                 <h3>パスワード</h3>
                 <TextField value={formValues.password} onChange={(e) => setFormValues({ ...formValues, password: e.target.value })} />
                 <br />
+                <a href="/signin">アカウントをお持ちの方はこちら</a>
                 <Button variant="contained" onClick={submit}>登録</Button>
                 <Button variant="outlined" startIcon=
                     {<img src="https://images-ext-1.discordapp.net/external/cPbexFq_vc92gA47x_BvRBqXQQkk0OlRugeuUNbcotg/https/developers.google.com/identity/images/g-logo.png?format=webp&quality=lossless&width=142&height=142"
@@ -68,10 +70,6 @@ export default function SignUp() {
                     Sign up with Google
                 </Button>
             </Paper>
-            <Paper>
-                <h1>Googleアカウントで新規登録</h1>
-            </Paper>
-            <a href="/signin">アカウントをお持ちの方はこちら</a>*
         </div>
     );
 }
