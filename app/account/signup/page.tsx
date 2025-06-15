@@ -5,7 +5,7 @@ import {
     Button,
 } from "@mui/material";
 import Webnavi from "../../_components/webnavi";
-import { supabase } from "../../utils/supabase/server";
+import { supabase } from "@/app/utils/supabase/server";
 import React, { useState } from 'react';
 
 export default function SignUp() {
