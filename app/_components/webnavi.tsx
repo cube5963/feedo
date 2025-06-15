@@ -51,7 +51,7 @@ export default function Webnavi(){
                 <li>プランと料金</li>
                 <li>
                     <Button 
-                    href="/signin" 
+                    href="/account/signin" 
                     variant="contained"
                     style={{
                         backgroundColor: "#000",
@@ -68,7 +68,7 @@ export default function Webnavi(){
                 </li>
                 <li>
                     <Button 
-                    href="/signup" 
+                    href="/account/signup" 
                     variant="contained"
                     style={{
                         backgroundColor: "#1976d2",

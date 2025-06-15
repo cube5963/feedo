@@ -3,7 +3,7 @@ import{
     Paper,
     TextField
 }from "@mui/material";
-import Webnavi from "../_components/webnavi";
+import Webnavi from "../../_components/webnavi";
 
 export default function SignIn(){
     return(
@@ -53,10 +53,6 @@ export default function SignIn(){
                 style = {{width:"200px",height:"50px"}}>
                     Sign in with Google
                 </Button>
-            </Paper>
-            <Paper>
-                <h1>Googleアカウントでサインイン</h1>
-                {/*GoogleAuthでグーグルアカウントでログインできるようにする。*/}
             </Paper>
         </div>
     );
