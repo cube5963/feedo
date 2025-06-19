@@ -64,6 +64,18 @@ const questionTypes = [
     },
 ];
 
+type questionProps = {
+    id: string;
+    type: string;
+    question: string;
+    discription?: string;
+    selection?: number;
+    sliderMin?: number;
+    sliderMax?: number;
+    sliderStep?: number;
+    options?: string[];
+}
+
 export default function Form(){
     const [selection, setSelection] = useState(1);
     const [questonType, setQuestionType] = useState('radio');
@@ -77,7 +89,7 @@ export default function Form(){
                 <CardContent>
                     <Stack spacing={2}>
                         <TextField
-                            label="質問"
+                            label={questionProps.question}
                             variant="outlined"
                             fullWidth
                             multiline
