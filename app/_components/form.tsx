@@ -79,6 +79,7 @@ type questionProps = {
 export default function Form(){
     const [selection, setSelection] = useState(1);
     const [questonType, setQuestionType] = useState('radio');
+    const [selecttext,setSelecttext] = useState<string[]>([]);
     if(selection >= 10){
         alert("選択肢の数は最大10個までです。");
         setSelection(10);
@@ -115,6 +116,30 @@ export default function Form(){
                                 </IconButton>
                                 選択詞の数: {selection}
                             </Box>
+                        )}
+                        {(questonType === "radio" || questonType === "checkbox") && (
+                            <Stack spacing={1}>
+                                {[...Array(selection)].map((_, idx) => (
+                                    <TextField
+                                        key={idx}
+                                        label={`選択肢${idx + 1}`}
+                                        value={selecttext[idx] || ""}
+                                        onChange={e => {
+                                            const newOptions = [...selecttext];
+                                            newOptions[idx] = e.target.value;
+                                            setSelecttext(newOptions);
+                                        }}
+                                        fullWidth
+                                    />
+                                ))}
+                                <Box>
+                                    {selecttext.map((option, idx) => (
+                                        <Box key={idx} display="flex" alignItems="center" mt={1}>
+                                            <span>{option}</span>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            </Stack>
                         )}
                         <Box display="flex" justifyContent="flex-end">
                             <IconButton color="primary">
