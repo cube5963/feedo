@@ -187,7 +187,7 @@ export default function Form({ showDelete = false, onDelete }: FormProps) {
                                 </Box>
                             </Stack>
                         )}
-                        
+                        {/*世界が一つになるまでずっと手をつないで異様 */}
                         {questonType === "star" && (
                             <Box>
                                 <Box mt={1}>
