@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import logo from "./../../../public/logo.png";
 import Form from "../../_components/form";
 import {
     Paper,
@@ -148,7 +147,6 @@ function TabPanelContent({ value }: { value: string }) {
                             InputProps={{ style: { textAlign: 'center' } }}
                         />
                     </Paper>
-                    <Form/>
                 </TabPanel>
             );
             
@@ -190,8 +188,8 @@ function TabPanelContent({ value }: { value: string }) {
 
 export default function Create() {
     const [value, setValue] = useState("1");
-    const [forms, setForms] = useState<number[]>([0]);
-    const [formId, setFormId] = useState(1);
+    const [forms, setForms] = useState<number[]>([]); // 初期状態で0個に変更
+    const [formId, setFormId] = useState(1); // フォームIDの初期値を1に設定
 
     const handleChange = (event: React.SyntheticEvent, newValue: string) => {
         setValue(newValue);
@@ -229,7 +227,7 @@ export default function Create() {
                             />
                         </Paper>
                         {forms.map((id, idx) => (
-                            <Form key={id} showDelete={forms.length > 1} onDelete={() => handleDeleteForm(id)} />
+                            <Form key={id} showDelete={true} onDelete={() => handleDeleteForm(id)} />
                         ))}
                     </TabPanel>
                 );
@@ -286,7 +284,7 @@ export default function Create() {
             >
                 <a href="/project">
                     <Image
-                        src={logo}
+                        src="/logo.png"
                         alt="Logo"
                         height={40}
                         width={250}
