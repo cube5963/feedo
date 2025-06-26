@@ -187,6 +187,7 @@ export default function Form({ showDelete = false, onDelete }: FormProps) {
                                 </Box>
                             </Stack>
                         )}
+                        
                         {questonType === "star" && (
                             <Box>
                                 <Box mt={1}>
