@@ -76,11 +76,23 @@ type questionProps = {
     options?: string[];
 }
 
-export default function Form(){
+// 型定義追加
+interface FormProps {
+    showDelete?: boolean;
+    onDelete?: () => void;
+}
+
+export default function Form({ showDelete = false, onDelete }: FormProps) {
     const [selection, setSelection] = useState(1);
     const [questonType, setQuestionType] = useState('radio');
     const [selecttext,setSelecttext] = useState<string[]>([]);
-    if(selection >= 10){
+    // star用
+    const [starSteps, setStarSteps] = useState(5); // 3～10
+    // slider用
+    const [sliderMin, setSliderMin] = useState(0);
+    const [sliderMax, setSliderMax] = useState(10);
+    const [sliderStep, setSliderStep] = useState(5);
+    if(selection > 10){
         alert("選択肢の数は最大10個までです。");
         setSelection(10);
     }
@@ -90,11 +102,26 @@ export default function Form(){
                 <CardContent>
                     <Stack spacing={2}>
                         <TextField
-                            label={questionProps.question}
+                            label="質問文"
                             variant="outlined"
                             fullWidth
                             multiline
-                            rows={4}
+                            rows={1}
+                            inputProps={{
+                                style: {
+                                    height: 'auto',
+                                },
+                            }}
+                            onFocus={e => {
+                                // 初期状態で高さをリセット
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                            }}
+                            onInput={e => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = `${target.scrollHeight}px`;
+                            }}
                         />
                         <Select
                             value={questonType}
@@ -104,17 +131,36 @@ export default function Form(){
                         >
                             {questionTypes.map((type) => (
                                 <MenuItem key={type.value} value={type.value}>
-                                    <ListItemIcon>{type.icon}</ListItemIcon>
-                                    <ListItemText primary={type.label} secondary={type.description} />
+                                    <Box display="flex" alignItems="center">
+                                        <ListItemIcon sx={{ minWidth: 32 }}>{type.icon}</ListItemIcon>
+                                        <Box>
+                                            <Box display="flex" alignItems="center">
+                                                <span>{type.label}</span>
+                                            </Box>
+                                            <Box>
+                                                <ListItemText secondary={type.description} />
+                                            </Box>
+                                        </Box>
+                                    </Box>
                                 </MenuItem>
                             ))}
                         </Select>
                         {(questonType === "radio" || questonType === "checkbox") && (
                             <Box>
-                                <IconButton color="primary" onClick={() => setSelection(selection + 1)}>
-                                    <ThumbUpIcon />
-                                </IconButton>
-                                選択詞の数: {selection}
+                                選択肢の個数：
+                                <Select
+                                    value={selection}
+                                    onChange={(e: SelectChangeEvent<number>) => setSelection(Number(e.target.value))}
+                                    displayEmpty
+                                    size="small"
+                                    sx={{ width: 120 }}
+                                >
+                                    {[...Array(10)].map((_, i) => (
+                                        <MenuItem key={i + 1} value={i + 1}>
+                                            {i + 1} 個
+                                        </MenuItem>
+                                    ))}
+                                </Select>
                             </Box>
                         )}
                         {(questonType === "radio" || questonType === "checkbox") && (
@@ -141,10 +187,80 @@ export default function Form(){
                                 </Box>
                             </Stack>
                         )}
+                        {questonType === "star" && (
+                            <Box>
+                                <Box mt={1}>
+                                    <Select
+                                        value={starSteps}
+                                        onChange={e => setStarSteps(Number(e.target.value))}
+                                        size="small"
+                                        sx={{ width: 120 }}
+                                    >
+                                        {[...Array(8)].map((_, i) => (
+                                            <MenuItem key={i + 3} value={i + 3}>
+                                                {i + 3} 段階
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </Box>
+                            </Box>
+                        )}
+                        {questonType === "slider" && (
+                            <Box>
+                                <Box mt={1} display="flex" gap={2}>
+                                    <TextField
+                                        label="最小値"
+                                        type="number"
+                                        size="small"
+                                        sx={{ width: 100 }}
+                                        inputProps={{ min: 0, max: sliderMax - 1 }}
+                                        value={sliderMin}
+                                        onChange={e => {
+                                            let min = Math.max(0, Number(e.target.value));
+                                            let max = sliderMax;
+                                            if (min >= max) max = min + 1 > 100 ? 100 : min + 1;
+                                            setSliderMin(min);
+                                            setSliderMax(max);
+                                            if (sliderStep > max) setSliderStep(max);
+                                        }}
+                                    />
+                                    <TextField
+                                        label="最大値"
+                                        type="number"
+                                        size="small"
+                                        sx={{ width: 100 }}
+                                        inputProps={{ min: sliderMin + 1, max: 100 }}
+                                        value={sliderMax}
+                                        onChange={e => {
+                                            let max = Math.min(100, Number(e.target.value));
+                                            let min = sliderMin;
+                                            if (max <= min) min = max - 1 < 0 ? 0 : max - 1;
+                                            setSliderMin(min);
+                                            setSliderMax(max);
+                                            if (sliderStep > max) setSliderStep(max);
+                                        }}
+                                    />
+                                    <TextField
+                                        label="分割数"
+                                        type="number"
+                                        size="small"
+                                        sx={{ width: 100 }}
+                                        inputProps={{ min: 2, max: sliderMax }}
+                                        value={sliderStep}
+                                        onChange={e => {
+                                            let val = Math.max(2, Math.min(Number(e.target.value), sliderMax));
+                                            setSliderStep(val);
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+                        )}
                         <Box display="flex" justifyContent="flex-end">
-                            <IconButton color="primary">
-                                <DeleteIcon />
-                            </IconButton>
+                            {showDelete && (
+                                <IconButton color="primary" onClick={onDelete}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            )}
                         </Box>
                     </Stack>
                 </CardContent>
