@@ -1,6 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 import { 
     TextField, 
     Box,
@@ -40,9 +41,11 @@ type FormType = "radio" | "checkbox" | "text" | "star" | "two_choice" | "slider"
 interface FormProps {
     initialSections?: Section[]
     formId?: number // FormIDを受け取るためのprop
+    hideFormSelector?: boolean // フォーム選択を隠すかどうか
 }
 
-export default function Page({ initialSections = [], formId }: FormProps) {
+export default function Page({ initialSections = [], formId, hideFormSelector = false }: FormProps) {
+    const router = useRouter()
     const [sections, setSections] = useState<Section[]>(initialSections)
     const [sectionName, setSectionName] = useState('')
     const [sectionType, setSectionType] = useState<FormType>('text')
@@ -350,6 +353,44 @@ export default function Page({ initialSections = [], formId }: FormProps) {
             setLoading(false)
         }
     }
+
+    // 新規フォームを作成する関数
+    const handleCreateNewForm = async () => {
+        setLoading(true)
+        setMessage('')
+
+        try {
+            const supabase = createClient()
+            
+            // 新しいフォームを作成
+            const { data: newForm, error: createError } = await supabase
+                .from('Form')
+                .insert([{
+                    FormName: `新しいフォーム ${new Date().toLocaleString('ja-JP')}`,
+                    ImgID: '',
+                    Delete: false
+                }])
+                .select()
+                .single()
+            
+            if (createError) {
+                console.error('フォーム作成エラー:', createError)
+                setMessage(`フォームの作成に失敗しました: ${createError.message}`)
+                return
+            }
+            
+            if (newForm) {
+                console.log('新しいフォームが作成されました:', newForm)
+                // 新しいフォームのページに遷移
+                router.push(`/project/${newForm.FormID}`)
+            }
+        } catch (error: any) {
+            console.error('フォーム作成エラー詳細:', error)
+            setMessage(`フォームの作成に失敗しました: ${error?.message || 'Unknown error'}`)
+        } finally {
+            setLoading(false)
+        }
+    }
     
     return (
         <Box sx={{ p: 2 }}>
@@ -367,27 +408,47 @@ export default function Page({ initialSections = [], formId }: FormProps) {
                 sx={{ mb: 2 }}
             />
 
-            {/* Formセレクター */}
-            <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>使用するフォーム</InputLabel>
-                <Select
-                    value={currentFormId || ''}
-                    label="使用するフォーム"
-                    onChange={(e) => setCurrentFormId(Number(e.target.value))}
-                    disabled={availableFormIds.length === 0}
-                >
-                    {availableFormIds.map((formId) => (
-                        <MenuItem key={formId} value={formId}>
-                            Form ID: {formId}
-                        </MenuItem>
-                    ))}
-                </Select>
-                {availableFormIds.length === 0 && (
-                    <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                        利用可能なフォームがありません。Supabaseダッシュボードでフォームを作成してください。
-                    </Typography>
-                )}
-            </FormControl>
+            {/* Formセレクター - hideFormSelectorがfalseの場合のみ表示 */}
+            {!hideFormSelector && (
+                <>
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                        <InputLabel>使用するフォーム</InputLabel>
+                        <Select
+                            value={currentFormId || ''}
+                            label="使用するフォーム"
+                            onChange={(e) => setCurrentFormId(Number(e.target.value))}
+                            disabled={availableFormIds.length === 0}
+                        >
+                            {availableFormIds.map((formId) => (
+                                <MenuItem key={formId} value={formId}>
+                                    Form ID: {formId}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        {availableFormIds.length === 0 && (
+                            <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                                利用可能なフォームがありません。Supabaseダッシュボードでフォームを作成してください。
+                            </Typography>
+                        )}
+                    </FormControl>
+
+                    {/* 新規フォーム作成ボタン */}
+                    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+                        <Button 
+                            variant="outlined" 
+                            onClick={handleCreateNewForm}
+                            disabled={loading}
+                            startIcon={<AddIcon />}
+                            sx={{ minWidth: '200px' }}
+                        >
+                            {loading ? '作成中...' : '新規フォーム作成'}
+                        </Button>
+                        <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                            新しいフォームを作成して専用ページに移動します
+                        </Typography>
+                    </Box>
+                </>
+            )}
 
             <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>質問タイプ</InputLabel>

@@ -8,50 +8,63 @@ import {
   Button,
   Avatar,
   ButtonBase,
+  IconButton,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation'; // App Router 用
-// アンケートデータ型
-type SurveyItem = {
-  img: string;
-  title: string;
-  date: string;
-  answers: number;
-  id: string;
-};
+import { createClient } from '@/utils/supabase/client'
+
+// Supabaseフォーム型
+interface FormData {
+  FormID: number;
+  FormName: string;
+  ImgID: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  Delete: boolean;
+}
+
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { Modal, Button as AntdButton, Checkbox } from 'antd';
 
-const surveyData: SurveyItem[] = [
-  {
-    img: 'https://www.tobutoptours.co.jp/clubjtobuto/common/pdf/jrhotel.jpg',
-    title: 'ホテルフィードお客様アンケート',
-    date: '2025/2/28',
-    answers: 37,
-    id: 'hotel-feedo',
-  },
-  {
-    img: 'https://cdn.4travel.jp/img/tcs/t/album/src/11/27/52/src_11275261.jpg?updated_at=1554462940',
-    title: '府居土旅館お客様アンケート',
-    date: '2024/12/12',
-    answers: 507,
-    id: 'fukyo-ryokan',
-  },
-  {
-    img: 'https://cdn.pixabay.com/photo/2015/09/18/19/03/cabin-944108_1280.jpg',
-    title: 'cottage FEEDOお客様アンケート',
-    date: '2024/12/10',
-    answers: 7,
-    id: 'cottage-feedo',
-  },
-];
 export default function Project() {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [useAi, setUseAi] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [forms, setForms] = useState<FormData[]>([]);
+  const [loadingForms, setLoadingForms] = useState(true);
 
-  const handleClick = (id: string) => {
-    // 動的ページ遷移（仮）
-    router.push('/survey/${id}');
+  // Supabaseからフォーム一覧を取得
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('Form')
+          .select('*')
+          .eq('Delete', false)
+          .order('CreatedAt', { ascending: false });
+
+        if (error) {
+          console.error('フォーム取得エラー:', error);
+        } else {
+          setForms(data || []);
+        }
+      } catch (error) {
+        console.error('フォーム取得エラー詳細:', error);
+      } finally {
+        setLoadingForms(false);
+      }
+    };
+
+    fetchForms();
+  }, []);
+
+  const handleClick = (formId: string) => {
+    // Supabaseフォームのページに遷移
+    router.push(`/project/${formId}`);
   };
 
   const create = () => {
@@ -68,48 +81,179 @@ export default function Project() {
     setCreateOpen(true);
   };
 
+  // 新規フォーム作成関数
+  const handleCreateNewForm = async () => {
+    setLoading(true);
+    
+    try {
+      const supabase = createClient();
+      
+      // 新しいフォームを作成
+      const { data: newForm, error: createError } = await supabase
+        .from('Form')
+        .insert([{
+          FormName: `新しいフォーム ${new Date().toLocaleString('ja-JP')}`,
+          ImgID: '',
+          Delete: false
+        }])
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('フォーム作成エラー:', createError);
+        alert(`フォームの作成に失敗しました: ${createError.message}`);
+        return;
+      }
+      
+      if (newForm) {
+        console.log('新しいフォームが作成されました:', newForm);
+        // ローカルのフォームリストに追加
+        setForms(prev => [newForm, ...prev]);
+        // 新しいフォームのページに遷移
+        router.push(`/project/${newForm.FormID}`);
+      }
+    } catch (error: any) {
+      console.error('フォーム作成エラー詳細:', error);
+      alert(`フォームの作成に失敗しました: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // フォーム削除関数
+  const handleDeleteForm = async (formId: number, formName: string, event: React.MouseEvent) => {
+    // クリックイベントの伝播を停止（親のButtonBaseがクリックされないように）
+    event.stopPropagation();
+    
+    if (!confirm(`「${formName}」を削除しますか？\nこのフォーム内のすべてのセクションも同時に削除されます。\nこの操作は取り消せません。`)) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      
+      // まず関連するSectionを削除
+      const { error: sectionError } = await supabase
+        .from('Section')
+        .delete()
+        .eq('FormID', formId);
+
+      if (sectionError) {
+        console.error('セクション削除エラー:', sectionError);
+        alert(`セクションの削除に失敗しました: ${sectionError.message}`);
+        return;
+      }
+
+      // 次にFormを削除
+      const { error: formError } = await supabase
+        .from('Form')
+        .delete()
+        .eq('FormID', formId);
+
+      if (formError) {
+        console.error('フォーム削除エラー:', formError);
+        alert(`フォームの削除に失敗しました: ${formError.message}`);
+        return;
+      }
+
+      // ローカルのフォームリストから削除
+      setForms(prev => prev.filter(form => form.FormID !== formId));
+      console.log(`フォーム ${formName} (ID: ${formId}) と関連セクションを削除しました`);
+      
+    } catch (error: any) {
+      console.error('フォーム削除エラー詳細:', error);
+      alert(`フォームの削除に失敗しました: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div>
+    <>
+
       <Box sx={{ maxWidth: 500, margin: 'auto', padding: 2 }}>
         {/* 新規作成 */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button variant="outlined" sx={{ width: 100, height: 100 }} onClick={create}>
-            <Typography variant="h3">＋</Typography>
+          <Button 
+            variant="outlined" 
+            sx={{ width: 100, height: 100 }} 
+            onClick={handleCreateNewForm}
+            disabled={loading}
+          >
+            <Typography variant="h3">{loading ? '...' : '＋'}</Typography>
           </Button>
           <Box sx={{ ml: 2 }}>
-            <Typography variant="h6">新規作成</Typography>
+            <Typography variant="h6">新規フォーム作成</Typography>
             <Typography variant="body2" color="text.secondary">
-              新しいアンケートの作成
+              新しいアンケートフォームを作成します
             </Typography>
           </Box>
         </Box>
+        
         {/* アンケート一覧 */}
-        {surveyData.map((item) => (
-          <ButtonBase
-            key={item.id}
-            onClick={() => handleClick(item.id)}
-            sx={{ width: '100%', mb: 2, textAlign: 'left', borderRadius: 1 }}
-          >
-            <Card sx={{ display: 'flex', width: '100%' }}>
-              <Avatar
-                variant="square"
-                src={item.img}
-                alt={item.title}
-                sx={{ width: 100, height: 100 }}
-              />
-              <CardContent>
-                <Typography variant="subtitle1">{item.title}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  最終編集日 {item.date}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  回答数 {item.answers}件
-                </Typography>
-              </CardContent>
-            </Card>
-          </ButtonBase>
-        ))}
+        {loadingForms ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              フォームを読み込み中...
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Supabaseから取得したフォーム */}
+            {forms.map((form) => (
+              <Box
+                key={`form-${form.FormID}`}
+                sx={{ width: '100%', mb: 2 }}
+              >
+                <Card 
+                  sx={{ 
+                    display: 'flex', 
+                    width: '100%',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      boxShadow: 2,
+                      bgcolor: 'action.hover'
+                    }
+                  }}
+                  onClick={() => handleClick(form.FormID.toString())}
+                >
+                  <Avatar
+                    variant="square"
+                    sx={{ width: 100, height: 100, bgcolor: 'primary.light' }}
+                  >
+                    📝
+                  </Avatar>
+                  <CardContent sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1">{form.FormName}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      作成日 {new Date(form.CreatedAt).toLocaleDateString('ja-JP')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Form ID: {form.FormID}
+                    </Typography>
+                  </CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
+                    <IconButton 
+                      color="error"
+                      onClick={(e) => handleDeleteForm(form.FormID, form.FormName, e)}
+                      disabled={loading}
+                      title="このフォームを削除"
+                      sx={{ 
+                        '&:hover': { bgcolor: 'error.light', color: 'white' }
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                </Card>
+              </Box>
+            ))}
+          </>
+        )}
       </Box>
+
       <Modal
         title="新規作成"
         open={createOpen}
@@ -143,6 +287,6 @@ export default function Project() {
           <Checkbox>アンケートの質問文の自動改善</Checkbox>
         </div>
       </Modal>
-    </div>
+    </>
   );
 }
