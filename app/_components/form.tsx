@@ -2,6 +2,24 @@
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+    useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { 
     TextField, 
     Box,
@@ -22,6 +40,7 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import { useEffect } from 'react'
 
 interface Section {
@@ -37,6 +56,69 @@ interface Section {
 }
 
 type FormType = "radio" | "checkbox" | "text" | "star" | "two_choice" | "slider"
+
+// ドラッグ可能なセクションアイテムコンポーネント
+function SortableSection({ section, onDelete }: { section: Section, onDelete: (id: number) => void }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: section.SectionID! })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+        <Paper 
+            ref={setNodeRef} 
+            style={style} 
+            sx={{ 
+                mb: 2, 
+                p: 2,
+                cursor: isDragging ? 'grabbing' : 'grab',
+                border: isDragging ? '2px dashed #ccc' : 'none'
+            }}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <IconButton 
+                    {...attributes} 
+                    {...listeners}
+                    sx={{ 
+                        cursor: 'grab',
+                        '&:active': { cursor: 'grabbing' },
+                        color: 'text.secondary'
+                    }}
+                >
+                    <DragIndicatorIcon />
+                </IconButton>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6">{section.SectionName}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        タイプ: {section.SectionType} | 順序: {section.SectionOrder} | Form ID: {section.FormID}
+                    </Typography>
+                    {section.SectionDesc !== '{}' && (
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                            設定: {section.SectionDesc}
+                        </Typography>
+                    )}
+                </Box>
+                <IconButton 
+                    color="error"
+                    onClick={() => onDelete(section.SectionID!)}
+                    title="この質問を削除"
+                >
+                    <DeleteIcon />
+                </IconButton>
+            </Box>
+        </Paper>
+    )
+}
 
 interface FormProps {
     initialSections?: Section[]
@@ -60,6 +142,51 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
     const [message, setMessage] = useState('')
     const [availableFormIds, setAvailableFormIds] = useState<number[]>([])
     const [currentFormId, setCurrentFormId] = useState<number | null>(formId || null)
+
+    // DnD設定
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
+
+    // ドラッグ終了時の処理
+    const handleDragEnd = async (event: any) => {
+        const { active, over } = event
+
+        if (active.id !== over.id) {
+            const oldIndex = sections.findIndex(section => section.SectionID === active.id)
+            const newIndex = sections.findIndex(section => section.SectionID === over.id)
+            
+            const newSections = arrayMove(sections, oldIndex, newIndex)
+            
+            // 新しい順序でSectionOrderを更新
+            const updatedSections = newSections.map((section, index) => ({
+                ...section,
+                SectionOrder: index + 1
+            }))
+            
+            setSections(updatedSections)
+            
+            // Supabaseにも順序を保存
+            try {
+                const supabase = createClient()
+                
+                for (const section of updatedSections) {
+                    await supabase
+                        .from('Section')
+                        .update({ SectionOrder: section.SectionOrder })
+                        .eq('SectionID', section.SectionID)
+                }
+                
+                setMessage('質問の順序を更新しました')
+            } catch (error) {
+                console.error('順序更新エラー:', error)
+                setMessage('順序の更新に失敗しました')
+            }
+        }
+    }
 
     useEffect(() => {
         // fetchData: SupabaseからFormとSectionテーブルのデータを取得する非同期関数
@@ -626,36 +753,32 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                 <Typography variant="h5" sx={{ mb: 2 }}>
                     既存の質問一覧 {currentFormId && `(Form ID: ${currentFormId})`}
                 </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    ドラッグして順序を変更できます
+                </Typography>
                 {sections?.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">
                         まだ質問がありません。
                     </Typography>
                 ) : (
-                    sections?.map((section) => (
-                        <Paper key={section.SectionID} sx={{ mb: 2, p: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <Box sx={{ flex: 1 }}>
-                                    <Typography variant="h6">{section.SectionName}</Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        タイプ: {section.SectionType} | 順序: {section.SectionOrder} | Form ID: {section.FormID}
-                                    </Typography>
-                                    {section.SectionDesc !== '{}' && (
-                                        <Typography variant="body2" sx={{ mt: 1 }}>
-                                            設定: {section.SectionDesc}
-                                        </Typography>
-                                    )}
-                                </Box>
-                                <IconButton 
-                                    color="error"
-                                    onClick={() => handleDeleteSection(section.SectionID!)}
-                                    sx={{ ml: 2 }}
-                                    title="この質問を削除"
-                                >
-                                    <DeleteIcon />
-                                </IconButton>
-                            </Box>
-                        </Paper>
-                    ))
+                    <DndContext 
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext 
+                            items={sections.map(s => s.SectionID!)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {sections.map((section) => (
+                                <SortableSection
+                                    key={section.SectionID}
+                                    section={section}
+                                    onDelete={handleDeleteSection}
+                                />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
                 )}
             </Box>
         </Box>
