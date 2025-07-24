@@ -48,8 +48,8 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import { useEffect } from 'react'
 
 interface Section {
-    SectionID?: number
-    FormID: number
+    SectionUUID?: string
+    FormUUID: string
     SectionName: string
     SectionOrder: number
     SectionType: FormType
@@ -68,8 +68,8 @@ function SortableSection({
     onUpdate 
 }: { 
     section: Section, 
-    onDelete: (id: number) => void,
-    onUpdate: (sectionId: number, updatedSection: Partial<Section>) => void
+    onDelete: (id: string) => void,
+    onUpdate: (sectionId: string, updatedSection: Partial<Section>) => void
 }) {
     const {
         attributes,
@@ -78,7 +78,7 @@ function SortableSection({
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: section.SectionID! })
+    } = useSortable({ id: section.SectionUUID! })
 
     // ローカル状態を section props で初期化し、変更時は即座にデータベースに保存
     const [localSection, setLocalSection] = useState<Section>(section)
@@ -122,7 +122,7 @@ function SortableSection({
         } catch (error) {
             console.error('セクション設定の解析エラー:', error)
         }
-    }, [section.SectionID, section.SectionName, section.SectionType, section.SectionDesc])
+    }, [section.SectionUUID, section.SectionName, section.SectionType, section.SectionDesc])
 
     // セクション説明のJSONを生成
     const generateSectionDesc = () => {
@@ -150,7 +150,7 @@ function SortableSection({
     const saveToDatabase = async (updatedData: Partial<Section>) => {
         try {
             console.log('データベースに保存中:', updatedData)
-            await onUpdate(section.SectionID!, updatedData)
+            await onUpdate(section.SectionUUID!, updatedData)
             console.log('データベース保存完了')
         } catch (error) {
             console.error('データベース保存エラー:', error)
@@ -353,7 +353,7 @@ function SortableSection({
                     color="error"
                     onClick={(e) => {
                         e.stopPropagation()
-                        onDelete(section.SectionID!)
+                        onDelete(section.SectionUUID!)
                     }}
                     title="この質問を削除"
                     sx={{ mr: 1 }}
@@ -511,7 +511,7 @@ function SortableSection({
 
 interface FormProps {
     initialSections?: Section[]
-    formId?: number // FormIDを受け取るためのprop
+    formId?: string // FormUUIDを受け取るためのprop
     hideFormSelector?: boolean // フォーム選択を隠すかどうか
 }
 
@@ -529,8 +529,8 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
     const [starCount, setStarCount] = useState(5)
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
-    const [availableFormIds, setAvailableFormIds] = useState<number[]>([])
-    const [currentFormId, setCurrentFormId] = useState<number | null>(formId || null)
+    const [availableFormIds, setAvailableFormIds] = useState<string[]>([])
+    const [currentFormId, setCurrentFormId] = useState<string | null>(formId || null)
 
     // DnD設定
     const sensors = useSensors(
@@ -545,8 +545,8 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
         const { active, over } = event
 
         if (active.id !== over.id) {
-            const oldIndex = sections.findIndex(section => section.SectionID === active.id)
-            const newIndex = sections.findIndex(section => section.SectionID === over.id)
+            const oldIndex = sections.findIndex(section => section.SectionUUID === active.id)
+            const newIndex = sections.findIndex(section => section.SectionUUID === over.id)
             
             const newSections = arrayMove(sections, oldIndex, newIndex)
             
@@ -566,7 +566,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                     await supabase
                         .from('Section')
                         .update({ SectionOrder: section.SectionOrder })
-                        .eq('SectionID', section.SectionID)
+                        .eq('SectionUUID', section.SectionUUID)
                 }
                 
                 setMessage('質問の順序を更新しました')
@@ -584,10 +584,10 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                 const supabase = createClient()
                 console.log('Supabaseクライアント作成成功')
                 
-                // Formテーブルから有効なFormIDを取得
+                // Formテーブルから有効なFormUUIDを取得
                 const { data: formData, error: formError } = await supabase
                     .from('Form')
-                    .select('FormID, FormName')
+                    .select('FormUUID, FormName')
                     .order('CreatedAt', { ascending: false })
                 
                 if (formError) {
@@ -597,14 +597,14 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                 }
                 
                 if (formData && formData.length > 0) {
-                    const formIds = formData.map(form => form.FormID)
+                    const formIds = formData.map(form => form.FormUUID)
                     setAvailableFormIds(formIds)
                     console.log('有効なForm一覧:', formData)
                     
-                    // 現在のFormIDが無効な場合、最初の有効なFormIDを使用
+                    // 現在のFormUUIDが無効な場合、最初の有効なFormUUIDを使用
                     if (!currentFormId || !formIds.includes(currentFormId)) {
                         setCurrentFormId(formIds[0])
-                        console.log('FormIDを自動設定:', formIds[0])
+                        console.log('FormUUIDを自動設定:', formIds[0])
                     }
                 } else {
                     console.log('Formテーブルにデータがありません')
@@ -627,20 +627,20 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                     }
                     
                     if (newForm) {
-                        setAvailableFormIds([newForm.FormID])
-                        setCurrentFormId(newForm.FormID)
+                        setAvailableFormIds([newForm.FormUUID])
+                        setCurrentFormId(newForm.FormUUID)
                         setMessage('デフォルトフォームを自動作成しました。')
                         console.log('自動作成されたForm:', newForm)
                     }
                 }
                 
-                // 現在のFormIDに関連するSectionデータを取得
-                const formIdToUse = currentFormId || (formData.length > 0 ? formData[0].FormID : null)
+                // 現在のFormUUIDに関連するSectionデータを取得
+                const formIdToUse = currentFormId || (formData.length > 0 ? formData[0].FormUUID : null)
                 if (formIdToUse) {
                     const { data: sectionData, error: sectionError } = await supabase
                         .from('Section')
                         .select('*')
-                        .eq('FormID', formIdToUse)
+                        .eq('FormUUID', formIdToUse)
                         .order('SectionOrder', { ascending: true })
                     
                     if (sectionError) {
@@ -772,8 +772,8 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                 SectionDesc: generatedDesc
             })
 
-            const newSection: Omit<Section, 'SectionID' | 'CreatedAt' | 'UpdatedAt'> = {
-                FormID: currentFormId,
+            const newSection: Omit<Section, 'SectionUUID' | 'CreatedAt' | 'UpdatedAt'> = {
+                FormUUID: currentFormId,
                 SectionName: sectionName,
                 SectionOrder: maxOrder,
                 SectionType: sectionType,
@@ -834,7 +834,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
     }
 
     // セクションを削除する関数
-    const handleDeleteSection = async (sectionId: number) => {
+    const handleDeleteSection = async (sectionId: string) => {
         if (!confirm('この質問を削除しますか？この操作は取り消せません。')) {
             return
         }
@@ -845,12 +845,12 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
         try {
             const supabase = createClient()
             
-            console.log('削除しようとするSectionID:', sectionId)
+            console.log('削除しようとするSectionUUID:', sectionId)
 
             const { error } = await supabase
                 .from('Section')
                 .delete()
-                .eq('SectionID', sectionId)
+                .eq('SectionUUID', sectionId)
 
             if (error) {
                 console.error('質問削除エラー:', error)
@@ -859,7 +859,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
             }
 
             // 削除成功時、ローカルステートからも削除
-            setSections(prev => prev.filter(section => section.SectionID !== sectionId))
+            setSections(prev => prev.filter(section => section.SectionUUID !== sectionId))
             setMessage('質問が正常に削除されました')
             
         } catch (error: any) {
@@ -871,7 +871,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
     }
 
     // セクションを更新する関数
-    const handleUpdateSection = async (sectionId: number, updatedSection: Partial<Section>) => {
+    const handleUpdateSection = async (sectionId: string, updatedSection: Partial<Section>) => {
         try {
             const supabase = createClient()
             
@@ -880,7 +880,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
             const { error } = await supabase
                 .from('Section')
                 .update(updatedSection)
-                .eq('SectionID', sectionId)
+                .eq('SectionUUID', sectionId)
 
             if (error) {
                 console.error('質問更新エラー:', error)
@@ -890,7 +890,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
 
             // 更新成功時、ローカルステートも更新（強制的に同期）
             setSections(prev => prev.map(section => 
-                section.SectionID === sectionId 
+                section.SectionUUID === sectionId 
                     ? { ...section, ...updatedSection }
                     : section
             ))
@@ -934,7 +934,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
             if (newForm) {
                 console.log('新しいフォームが作成されました:', newForm)
                 // 新しいフォームのページに遷移
-                router.push(`/project/${newForm.FormID}`)
+                router.push(`/project/${newForm.FormUUID}`)
             }
         } catch (error: any) {
             console.error('フォーム作成エラー詳細:', error)
@@ -968,7 +968,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                         <Select
                             value={currentFormId || ''}
                             label="使用するフォーム"
-                            onChange={(e) => setCurrentFormId(Number(e.target.value))}
+                            onChange={(e) => setCurrentFormId(e.target.value)}
                             disabled={availableFormIds.length === 0}
                         >
                             {availableFormIds.map((formId) => (
@@ -1192,12 +1192,12 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                         onDragEnd={handleDragEnd}
                     >
                         <SortableContext 
-                            items={sections.map(s => s.SectionID!)}
+                            items={sections.map(s => s.SectionUUID!)}
                             strategy={verticalListSortingStrategy}
                         >
                             {sections.map((section) => (
                                 <SortableSection
-                                    key={section.SectionID}
+                                    key={section.SectionUUID}
                                     section={section}
                                     onDelete={handleDeleteSection}
                                     onUpdate={handleUpdateSection}

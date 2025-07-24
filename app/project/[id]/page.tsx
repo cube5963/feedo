@@ -19,7 +19,7 @@ export default function ProjectPage() {
             const { data, error } = await supabase
                 .from('Form')
                 .select('FormName')
-                .eq('FormID', parseInt(projectId))
+                .eq('FormUUID', projectId)
                 .single()
 
             if (error) {
@@ -47,7 +47,7 @@ export default function ProjectPage() {
             const { error } = await supabase
                 .from('Form')
                 .update({ FormName: newFormName })
-                .eq('FormID', parseInt(projectId))
+                .eq('FormUUID', projectId)
 
             if (error) {
                 console.error('フォーム名更新エラー:', error)
@@ -98,7 +98,7 @@ export default function ProjectPage() {
                     {message}
                 </Typography>
             )}
-            <FormComponent formId={parseInt(projectId)} hideFormSelector={true} />
+            <FormComponent formId={projectId} hideFormSelector={true} />
         </Box>
     )
 }

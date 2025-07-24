@@ -16,7 +16,7 @@ import { createClient } from '@/utils/supabase/client'
 
 // Supabaseフォーム型
 interface FormData {
-  FormID: number;
+  FormUUID: string;
   FormName: string;
   ImgID: string;
   CreatedAt: string;
@@ -110,7 +110,7 @@ export default function Project() {
         // ローカルのフォームリストに追加
         setForms(prev => [newForm, ...prev]);
         // 新しいフォームのページに遷移
-        router.push(`/project/${newForm.FormID}`);
+        router.push(`/project/${newForm.FormUUID}`);
       }
     } catch (error: any) {
       console.error('フォーム作成エラー詳細:', error);
@@ -121,7 +121,7 @@ export default function Project() {
   };
 
   // フォーム削除関数
-  const handleDeleteForm = async (formId: number, formName: string, event: React.MouseEvent) => {
+  const handleDeleteForm = async (formId: string, formName: string, event: React.MouseEvent) => {
     // クリックイベントの伝播を停止（親のButtonBaseがクリックされないように）
     event.stopPropagation();
     
@@ -138,7 +138,7 @@ export default function Project() {
       const { error: sectionError } = await supabase
         .from('Section')
         .delete()
-        .eq('FormID', formId);
+        .eq('FormUUID', formId);
 
       if (sectionError) {
         console.error('セクション削除エラー:', sectionError);
@@ -150,7 +150,7 @@ export default function Project() {
       const { error: formError } = await supabase
         .from('Form')
         .delete()
-        .eq('FormID', formId);
+        .eq('FormUUID', formId);
 
       if (formError) {
         console.error('フォーム削除エラー:', formError);
@@ -159,7 +159,7 @@ export default function Project() {
       }
 
       // ローカルのフォームリストから削除
-      setForms(prev => prev.filter(form => form.FormID !== formId));
+      setForms(prev => prev.filter(form => form.FormUUID !== formId));
       console.log(`フォーム ${formName} (ID: ${formId}) と関連セクションを削除しました`);
       
     } catch (error: any) {
@@ -204,7 +204,7 @@ export default function Project() {
             {/* Supabaseから取得したフォーム */}
             {forms.map((form) => (
               <Box
-                key={`form-${form.FormID}`}
+                key={`form-${form.FormUUID}`}
                 sx={{ width: '100%', mb: 2 }}
               >
                 <Card 
@@ -217,7 +217,7 @@ export default function Project() {
                       bgcolor: 'action.hover'
                     }
                   }}
-                  onClick={() => handleClick(form.FormID.toString())}
+                  onClick={() => handleClick(form.FormUUID)}
                 >
                   <Avatar
                     variant="square"
@@ -231,13 +231,13 @@ export default function Project() {
                       作成日 {new Date(form.CreatedAt).toLocaleDateString('ja-JP')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Form ID: {form.FormID}
+                      Form ID: {form.FormUUID}
                     </Typography>
                   </CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
                     <IconButton 
                       color="error"
-                      onClick={(e) => handleDeleteForm(form.FormID, form.FormName, e)}
+                      onClick={(e) => handleDeleteForm(form.FormUUID, form.FormName, e)}
                       disabled={loading}
                       title="このフォームを削除"
                       sx={{ 
