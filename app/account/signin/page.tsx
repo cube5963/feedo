@@ -5,7 +5,7 @@ import {
     TextField
 } from "@mui/material";
 import Webnavi from "../../_components/webnavi";
-import { supabase } from "@/app/utils/supabase/server";
+import { createClient } from "@/utils/supabase/client";
 import React, { useState } from 'react';
 
 export default function SignIn() {
@@ -21,6 +21,7 @@ export default function SignIn() {
             alert("メールアドレスとパスワードを入力してください。");
             return;
         }
+        const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
