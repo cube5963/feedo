@@ -41,6 +41,10 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import EditIcon from '@mui/icons-material/Edit'
+import SaveIcon from '@mui/icons-material/Save'
+import CancelIcon from '@mui/icons-material/Cancel'
 import { useEffect } from 'react'
 
 interface Section {
@@ -58,7 +62,15 @@ interface Section {
 type FormType = "radio" | "checkbox" | "text" | "star" | "two_choice" | "slider"
 
 // ドラッグ可能なセクションアイテムコンポーネント
-function SortableSection({ section, onDelete }: { section: Section, onDelete: (id: number) => void }) {
+function SortableSection({ 
+    section, 
+    onDelete, 
+    onUpdate 
+}: { 
+    section: Section, 
+    onDelete: (id: number) => void,
+    onUpdate: (sectionId: number, updatedSection: Partial<Section>) => void
+}) {
     const {
         attributes,
         listeners,
@@ -68,55 +80,432 @@ function SortableSection({ section, onDelete }: { section: Section, onDelete: (i
         isDragging,
     } = useSortable({ id: section.SectionID! })
 
+    // ローカル状態を section props で初期化し、変更時は即座にデータベースに保存
+    const [localSection, setLocalSection] = useState<Section>(section)
+    const [editedOptions, setEditedOptions] = useState<string[]>([])
+    const [editedSliderSettings, setEditedSliderSettings] = useState({
+        min: 0,
+        max: 10,
+        divisions: 5,
+        labels: { min: '最小', max: '最大' }
+    })
+    const [editedStarCount, setEditedStarCount] = useState(5)
+
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
     }
 
+    // propsが変更されたときのみローカル状態を更新（初回とデータベースからの更新時）
+    useEffect(() => {
+        console.log('Section props changed:', section.SectionName, section.SectionType)
+        setLocalSection(section)
+        
+        // セクション詳細設定を解析してローカル状態を更新
+        try {
+            const sectionDesc = JSON.parse(section.SectionDesc || '{}')
+            
+            if (section.SectionType === 'radio' || section.SectionType === 'checkbox') {
+                setEditedOptions(sectionDesc.options || ['選択肢1', '選択肢2'])
+            } else if (section.SectionType === 'star') {
+                setEditedStarCount(sectionDesc.maxStars || 5)
+                setEditedOptions(sectionDesc.labels || [])
+            } else if (section.SectionType === 'slider') {
+                setEditedSliderSettings({
+                    min: sectionDesc.min || 0,
+                    max: sectionDesc.max || 10,
+                    divisions: sectionDesc.divisions || 5,
+                    labels: sectionDesc.labels || { min: '最小', max: '最大' }
+                })
+            }
+        } catch (error) {
+            console.error('セクション設定の解析エラー:', error)
+        }
+    }, [section.SectionID, section.SectionName, section.SectionType, section.SectionDesc])
+
+    // セクション説明のJSONを生成
+    const generateSectionDesc = () => {
+        switch (localSection.SectionType) {
+            case 'radio':
+            case 'checkbox':
+                return JSON.stringify({ 
+                    options: editedOptions.filter(opt => opt.trim() !== '') 
+                })
+            case 'star':
+                return JSON.stringify({ 
+                    maxStars: editedStarCount,
+                    labels: editedOptions.filter(opt => opt.trim() !== '') 
+                })
+            case 'slider':
+                return JSON.stringify(editedSliderSettings)
+            case 'text':
+            case 'two_choice':
+            default:
+                return '{}'
+        }
+    }
+
+    // データベースに保存する関数
+    const saveToDatabase = async (updatedData: Partial<Section>) => {
+        try {
+            console.log('データベースに保存中:', updatedData)
+            await onUpdate(section.SectionID!, updatedData)
+            console.log('データベース保存完了')
+        } catch (error) {
+            console.error('データベース保存エラー:', error)
+            // エラー時は元の状態に戻す
+            setLocalSection(section)
+        }
+    }
+
+    // 質問名変更時の処理
+    const handleNameChange = (newName: string) => {
+        const updatedSection = { ...localSection, SectionName: newName }
+        setLocalSection(updatedSection)
+    }
+
+    // 質問名のBlur時の保存処理
+    const handleNameBlur = () => {
+        if (localSection.SectionName !== section.SectionName) {
+            saveToDatabase({ SectionName: localSection.SectionName })
+        }
+    }
+
+    // 質問タイプ変更時の処理
+    const handleTypeChange = async (newType: FormType) => {
+        console.log('質問タイプ変更開始:', section.SectionName, 'から', localSection.SectionType, 'へ', newType)
+        
+        // ローカル状態を即座に更新
+        const updatedSection = { ...localSection, SectionType: newType }
+        setLocalSection(updatedSection)
+        
+        // タイプに応じたデフォルト設定
+        let newOptions = editedOptions
+        let newStarCount = editedStarCount
+        let newSliderSettings = editedSliderSettings
+        
+        if (newType === 'radio' || newType === 'checkbox') {
+            newOptions = ['選択肢1', '選択肢2']
+            setEditedOptions(newOptions)
+        } else if (newType === 'star') {
+            newStarCount = 5
+            newOptions = []
+            setEditedStarCount(newStarCount)
+            setEditedOptions(newOptions)
+        } else if (newType === 'slider') {
+            newSliderSettings = {
+                min: 0,
+                max: 10,
+                divisions: 5,
+                labels: { min: '最小', max: '最大' }
+            }
+            setEditedSliderSettings(newSliderSettings)
+        }
+        
+        // 新しいセクション説明を生成
+        let newDesc = '{}'
+        if (newType === 'radio' || newType === 'checkbox') {
+            newDesc = JSON.stringify({ options: newOptions.filter(opt => opt.trim() !== '') })
+        } else if (newType === 'star') {
+            newDesc = JSON.stringify({ maxStars: newStarCount, labels: newOptions.filter(opt => opt.trim() !== '') })
+        } else if (newType === 'slider') {
+            newDesc = JSON.stringify(newSliderSettings)
+        }
+        
+        // データベースに即座に保存
+        await saveToDatabase({ 
+            SectionType: newType,
+            SectionDesc: newDesc
+        })
+    }
+
+    // 選択肢を追加
+    const addEditOption = async () => {
+        if (editedOptions.length < 10) {
+            const newOptions = [...editedOptions, '']
+            setEditedOptions(newOptions)
+            
+            // 新しいセクション説明を生成して保存
+            const newDesc = JSON.stringify({ 
+                options: newOptions.filter(opt => opt.trim() !== '') 
+            })
+            await saveToDatabase({ SectionDesc: newDesc })
+        }
+    }
+
+    // 選択肢を削除
+    const removeEditOption = async (index: number) => {
+        const minOptions = localSection.SectionType === 'star' ? 3 : 2
+        if (editedOptions.length > minOptions) {
+            const newOptions = editedOptions.filter((_, i) => i !== index)
+            setEditedOptions(newOptions)
+            
+            // 新しいセクション説明を生成して保存
+            const newDesc = JSON.stringify({ 
+                options: newOptions.filter(opt => opt.trim() !== '') 
+            })
+            await saveToDatabase({ SectionDesc: newDesc })
+        }
+    }
+
+    // 選択肢を更新
+    const updateEditOption = (index: number, value: string) => {
+        const newOptions = [...editedOptions]
+        newOptions[index] = value
+        setEditedOptions(newOptions)
+    }
+
+    // 選択肢のBlur時の保存処理
+    const handleOptionBlur = async () => {
+        const newDesc = JSON.stringify({ 
+            options: editedOptions.filter(opt => opt.trim() !== '') 
+        })
+        if (newDesc !== section.SectionDesc) {
+            await saveToDatabase({ SectionDesc: newDesc })
+        }
+    }
+
+    // 星評価の数変更時の処理
+    const handleStarCountChange = (newCount: number) => {
+        setEditedStarCount(newCount)
+    }
+
+    // 星評価のBlur時の保存処理
+    const handleStarCountBlur = async () => {
+        const newDesc = JSON.stringify({ 
+            maxStars: editedStarCount,
+            labels: editedOptions.filter(opt => opt.trim() !== '') 
+        })
+        if (newDesc !== section.SectionDesc) {
+            await saveToDatabase({ SectionDesc: newDesc })
+        }
+    }
+
+    // スライダー設定変更時の処理
+    const handleSliderChange = (field: string, value: any) => {
+        setEditedSliderSettings(prev => ({ ...prev, [field]: value }))
+    }
+
+    // スライダーラベル変更時の処理
+    const handleSliderLabelChange = (type: 'min' | 'max', value: string) => {
+        setEditedSliderSettings(prev => ({ 
+            ...prev, 
+            labels: { ...prev.labels, [type]: value }
+        }))
+    }
+
+    // スライダー設定のBlur時の保存処理
+    const handleSliderBlur = async () => {
+        const newDesc = JSON.stringify(editedSliderSettings)
+        if (newDesc !== section.SectionDesc) {
+            await saveToDatabase({ SectionDesc: newDesc })
+        }
+    }
+
     return (
-        <Paper 
+        <Accordion 
             ref={setNodeRef} 
             style={style} 
             sx={{ 
-                mb: 2, 
-                p: 2,
-                cursor: isDragging ? 'grabbing' : 'grab',
-                border: isDragging ? '2px dashed #ccc' : 'none'
+                mb: 2,
+                border: isDragging ? '2px dashed #ccc' : 'none',
+                '&:before': { display: 'none' } // アコーディオンのデフォルトボーダーを削除
             }}
         >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <IconButton 
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {/* ドラッグハンドルをAccordionSummaryの外に移動 */}
+                <Box 
                     {...attributes} 
                     {...listeners}
                     sx={{ 
                         cursor: 'grab',
                         '&:active': { cursor: 'grabbing' },
-                        color: 'text.secondary'
+                        color: 'text.secondary',
+                        display: 'flex',
+                        alignItems: 'center',
+                        p: 1,
+                        mr: 1
                     }}
                 >
                     <DragIndicatorIcon />
-                </IconButton>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6">{section.SectionName}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        タイプ: {section.SectionType} | 順序: {section.SectionOrder} | Form ID: {section.FormID}
-                    </Typography>
-                    {section.SectionDesc !== '{}' && (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                            設定: {section.SectionDesc}
-                        </Typography>
-                    )}
                 </Box>
+                
+                <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{ 
+                        flex: 1,
+                        '& .MuiAccordionSummary-content': { 
+                            alignItems: 'center',
+                            gap: 1
+                        }
+                    }}
+                >
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="h6">{section.SectionName}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            タイプ: {section.SectionType} | 順序: {section.SectionOrder}
+                        </Typography>
+                    </Box>
+                </AccordionSummary>
+
                 <IconButton 
                     color="error"
-                    onClick={() => onDelete(section.SectionID!)}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete(section.SectionID!)
+                    }}
                     title="この質問を削除"
+                    sx={{ mr: 1 }}
                 >
                     <DeleteIcon />
                 </IconButton>
             </Box>
-        </Paper>
+
+            <AccordionDetails>
+                <Box>
+                    <TextField
+                        label="質問"
+                        value={localSection.SectionName}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        onBlur={handleNameBlur}
+                        fullWidth
+                        sx={{ mb: 2 }}
+                        size="small"
+                    />
+
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                        <InputLabel>質問タイプ</InputLabel>
+                        <Select
+                            value={localSection.SectionType}
+                            label="質問タイプ"
+                            size="small"
+                            onChange={(e) => handleTypeChange(e.target.value as FormType)}
+                        >
+                            <MenuItem value="radio">ラジオボタン</MenuItem>
+                            <MenuItem value="checkbox">チェックボックス</MenuItem>
+                            <MenuItem value="text">テキスト入力</MenuItem>
+                            <MenuItem value="star">星評価</MenuItem>
+                            <MenuItem value="two_choice">二択</MenuItem>
+                            <MenuItem value="slider">スライダー</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    {/* 編集用の設定セクション */}
+                    {(localSection.SectionType === 'radio' || localSection.SectionType === 'checkbox') && (
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 1 }}>選択肢の設定</Typography>
+                            {editedOptions.map((option, index) => (
+                                <Box key={index} sx={{ display: 'flex', mb: 1, alignItems: 'center' }}>
+                                    <TextField
+                                        label={`選択肢 ${index + 1}`}
+                                        value={option}
+                                        onChange={(e) => updateEditOption(index, e.target.value)}
+                                        onBlur={handleOptionBlur}
+                                        fullWidth
+                                        size="small"
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <IconButton 
+                                        color="error"
+                                        onClick={() => removeEditOption(index)}
+                                        disabled={editedOptions.length <= 2}
+                                        size="small"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                            ))}
+                            <Button 
+                                startIcon={<AddIcon />}
+                                variant="outlined" 
+                                onClick={addEditOption}
+                                disabled={editedOptions.length >= 10}
+                                size="small"
+                            >
+                                選択肢を追加
+                            </Button>
+                        </Box>
+                    )}
+
+                    {localSection.SectionType === 'star' && (
+                        <Box sx={{ mb: 2 }}>
+                            <TextField
+                                label="星の数"
+                                type="number"
+                                value={editedStarCount}
+                                onChange={(e) => handleStarCountChange(parseInt(e.target.value) || 5)}
+                                onBlur={handleStarCountBlur}
+                                inputProps={{ min: 3, max: 10 }}
+                                size="small"
+                                helperText="3-10個まで設定可能"
+                            />
+                        </Box>
+                    )}
+
+                    {localSection.SectionType === 'slider' && (
+                        <Box sx={{ mb: 2 }}>
+                            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                                <TextField
+                                    label="最小値"
+                                    type="number"
+                                    value={editedSliderSettings.min}
+                                    onChange={(e) => handleSliderChange('min', parseInt(e.target.value) || 0)}
+                                    onBlur={handleSliderBlur}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                />
+                                <TextField
+                                    label="最大値"
+                                    type="number"
+                                    value={editedSliderSettings.max}
+                                    onChange={(e) => handleSliderChange('max', parseInt(e.target.value) || 10)}
+                                    onBlur={handleSliderBlur}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                />
+                                <TextField
+                                    label="区分数"
+                                    type="number"
+                                    value={editedSliderSettings.divisions}
+                                    onChange={(e) => handleSliderChange('divisions', parseInt(e.target.value) || 5)}
+                                    onBlur={handleSliderBlur}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <TextField
+                                    label="最小値ラベル"
+                                    value={editedSliderSettings.labels.min}
+                                    onChange={(e) => handleSliderLabelChange('min', e.target.value)}
+                                    onBlur={handleSliderBlur}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                />
+                                <TextField
+                                    label="最大値ラベル"
+                                    value={editedSliderSettings.labels.max}
+                                    onChange={(e) => handleSliderLabelChange('max', e.target.value)}
+                                    onBlur={handleSliderBlur}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                />
+                            </Box>
+                        </Box>
+                    )}
+
+                    {(localSection.SectionType === 'text' || localSection.SectionType === 'two_choice') && (
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                            {localSection.SectionType === 'text' 
+                                ? 'テキスト入力タイプでは追加設定は不要です。'
+                                : '二択タイプでは追加設定は不要です。'
+                            }
+                        </Alert>
+                    )}
+                </Box>
+            </AccordionDetails>
+        </Accordion>
     )
 }
 
@@ -481,6 +870,42 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
         }
     }
 
+    // セクションを更新する関数
+    const handleUpdateSection = async (sectionId: number, updatedSection: Partial<Section>) => {
+        try {
+            const supabase = createClient()
+            
+            console.log('更新しようとするセクション:', { sectionId, updatedSection })
+
+            const { error } = await supabase
+                .from('Section')
+                .update(updatedSection)
+                .eq('SectionID', sectionId)
+
+            if (error) {
+                console.error('質問更新エラー:', error)
+                setMessage(`更新に失敗しました: ${error.message}`)
+                throw error // エラーを投げることで、呼び出し元にエラーを通知
+            }
+
+            // 更新成功時、ローカルステートも更新（強制的に同期）
+            setSections(prev => prev.map(section => 
+                section.SectionID === sectionId 
+                    ? { ...section, ...updatedSection }
+                    : section
+            ))
+            console.log('質問が正常に更新されました')
+            
+            // 更新成功を示すため、少し遅延を入れる
+            await new Promise(resolve => setTimeout(resolve, 100))
+            
+        } catch (error: any) {
+            console.error('セクション更新エラー詳細:', error)
+            setMessage(`セクションの更新に失敗しました: ${error?.message || 'Unknown error'}`)
+            throw error // エラーを再投げして、呼び出し元に処理を委ねる
+        }
+    }
+
     // 新規フォームを作成する関数
     const handleCreateNewForm = async () => {
         setLoading(true)
@@ -746,7 +1171,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                 disabled={loading}
                 sx={{ mb: 3 }}
             >
-                {loading ? '保存中...' : 'セクションを保存'}
+                {loading ? '保存中...' : 'セクションを追加'}
             </Button>
 
             <Box>
@@ -775,6 +1200,7 @@ export default function Page({ initialSections = [], formId, hideFormSelector = 
                                     key={section.SectionID}
                                     section={section}
                                     onDelete={handleDeleteSection}
+                                    onUpdate={handleUpdateSection}
                                 />
                             ))}
                         </SortableContext>
