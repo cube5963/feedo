@@ -2,7 +2,7 @@
 import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import FormComponent from '@/app/_components/form'
-import { Box, Typography, Paper, TextField } from '@mui/material'
+import { Box, Typography, Paper, TextField, Container, Alert, Fade } from '@mui/material'
 import { createClient } from '@/utils/supabase/client'
 
 export default function ProjectPage() {
@@ -73,32 +73,63 @@ export default function ProjectPage() {
     }, [projectId])
 
     return (
-        <Box sx={{ p: 3 }}>
-            <TextField
-                label="プロジェクト名"
-                variant="outlined"
-                fullWidth
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                onBlur={() => updateFormName(formTitle)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                        updateFormName(formTitle)
-                    }
-                }}
-                disabled={loading}
-                sx={{ mb: 2 }}
-            />
-            {message && (
-                <Typography
-                    variant="body2"
-                    color={message.includes('失敗') ? 'error' : 'success.main'}
-                    sx={{ mb: 2 }}
+        <Box sx={{
+            minHeight: '100vh',
+            backgroundColor: '#ffffff',
+            py: 4
+        }}>
+            <Box sx={{
+                maxWidth: 800,
+                mx: 'auto',
+                px: 3,
+                width: '100%'
+            }}>
+                {/* プロジェクト設定 */}
+                <Paper 
+                    elevation={2}
+                    sx={{
+                        p: 4,
+                        mb: 4,
+                        borderRadius: 2,
+                        border: '1px solid #e0e0e0'
+                    }}
                 >
-                    {message}
-                </Typography>
-            )}
-            <FormComponent formId={projectId} hideFormSelector={true} />
+                    <Typography variant="h6" sx={{ mb: 2, color: '#333', fontWeight: 600 }}>
+                        プロジェクト設定
+                    </Typography>
+                    <TextField
+                        label="プロジェクト名"
+                        variant="outlined"
+                        fullWidth
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        onBlur={() => updateFormName(formTitle)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                updateFormName(formTitle)
+                            }
+                        }}
+                        disabled={loading}
+                        placeholder="わかりやすいプロジェクト名を入力してください"
+                    />
+                </Paper>
+
+                {/* メッセージ表示 */}
+                {message && (
+                    <Alert 
+                        severity={message.includes('失敗') ? 'error' : 'success'}
+                        sx={{
+                            mb: 3,
+                            borderRadius: 2
+                        }}
+                    >
+                        {message}
+                    </Alert>
+                )}
+
+                {/* フォームコンポーネント */}
+                <FormComponent formId={projectId} hideFormSelector={true} />
+            </Box>
         </Box>
     )
 }
