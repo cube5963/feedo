@@ -101,6 +101,7 @@ export default function ProjectPage() {
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
                         onBlur={() => updateFormName(formTitle)}
+                        inputProps={{ maxLength: 50 }}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 updateFormName(formTitle)
