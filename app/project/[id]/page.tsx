@@ -94,9 +94,6 @@ export default function ProjectPage() {
                         border: '1px solid #e0e0e0'
                     }}
                 >
-                    <Typography variant="h6" sx={{ mb: 2, color: '#333', fontWeight: 600 }}>
-                        プロジェクト設定
-                    </Typography>
                     <TextField
                         label="プロジェクト名"
                         variant="outlined"
