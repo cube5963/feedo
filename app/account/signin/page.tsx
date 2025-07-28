@@ -8,22 +8,14 @@ import Webnavi from "../../_components/webnavi";
 import { createClient } from "@/utils/supabase/client";
 import React, { useState } from 'react';
 
-const signInWithGoogle = async () => {
+const handleGoogleSignIn = async () => {
     const supabase = createClient();
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+  })
+  if (error) alert(`Googleログインでエラーが発生しました: ${error.message}`)
+}
 
-    const redirectTo = '${window.location.origin}/auth/v1/callback';
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo,
-        },
-    });
-
-    if (error) {
-        alert(`Googleログインでエラーが発生しました: ${error.message}`);
-    }
-};
 
 
 export default function SignIn() {
@@ -103,7 +95,7 @@ export default function SignIn() {
                     {<img src="https://images-ext-1.discordapp.net/external/cPbexFq_vc92gA47x_BvRBqXQQkk0OlRugeuUNbcotg/https/developers.google.com/identity/images/g-logo.png?format=webp&quality=lossless&width=142&height=142"
                         style={{ width: "30px", height: "30px" }} />}
                     style={{ width: "200px", height: "50px" }}
-                    onClick={signInWithGoogle}
+                    onClick={handleGoogleSignIn}
                     >
                     Sign in with Google
                 </Button>
