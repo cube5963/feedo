@@ -38,6 +38,14 @@ export default function Project() {
 
   // Supabaseからフォーム一覧を取得
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data, error }) => {
+      console.log('Supabase Session:', data?.session);
+      if (error) {
+        console.error('セッション取得エラー:', error);
+      }
+    });
+
     const fetchForms = async () => {
       try {
         const supabase = createClient();
