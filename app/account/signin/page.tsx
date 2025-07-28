@@ -10,8 +10,14 @@ import React, { useState } from 'react';
 
 const signInWithGoogle = async () => {
     const supabase = createClient();
+
+    const redirectTo = '${window.location.origin}/auth/v1/callback';
+
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+            redirectTo,
+        },
     });
 
     if (error) {
