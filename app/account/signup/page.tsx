@@ -5,7 +5,7 @@ import {
     Button,
 } from "@mui/material";
 import Webnavi from "../../_components/webnavi";
-import { supabase } from "@/app/utils/supabase/server";
+import { createClient } from "@/utils/supabase/client";
 import React, { useState } from 'react';
 
 export default function SignUp() {
@@ -22,6 +22,7 @@ export default function SignUp() {
             alert("メールアドレスとパスワードを入力してください。");
             return;
         }
+        const supabase = createClient();
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
