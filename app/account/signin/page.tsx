@@ -5,7 +5,7 @@ import {
     TextField
 } from "@mui/material";
 import Webnavi from "../../_components/webnavi";
-import { supabase } from "@/app/utils/supabase/server";
+import { createClient } from "@/utils/supabase/client";
 import React, { useState } from 'react';
 
 export default function SignIn() {
@@ -21,6 +21,7 @@ export default function SignIn() {
             alert("メールアドレスとパスワードを入力してください。");
             return;
         }
+        const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -31,6 +32,23 @@ export default function SignIn() {
         } else {
             alert("ログインに成功しました。");
         }
+    }
+
+    const google_signin = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: 'http://localhost:3000/project', // リダイレクト先を指定
+            },
+        });
+
+        if (error) {
+            alert(`エラーが発生しました: ${error.message}`);
+        }
+
+        console.log("Google SignIn Data:", data);
     }
 
     return (
@@ -80,9 +98,10 @@ export default function SignIn() {
                 <a href="" style={{ marginTop: "10px" }}>パスワードをお忘れですか？</a>
                 <a href="/account/signup" style={{ marginTop: "10px" }}>アカウントをお持ち出ない方はこちら</a>
                 <Button variant="contained" onClick={submit}>ログイン</Button>
+                <Button variant="contained" onClick={google_signin}>Google</Button>
                 <Button variant="outlined" startIcon=
                     {<img src="https://images-ext-1.discordapp.net/external/cPbexFq_vc92gA47x_BvRBqXQQkk0OlRugeuUNbcotg/https/developers.google.com/identity/images/g-logo.png?format=webp&quality=lossless&width=142&height=142"
-                        style={{ width: "30px", height: "30px" }} />}
+                        style={{ width: "30px", height: "30px" }} onClick={google_signin} />}
                     style={{ width: "200px", height: "50px" }}>
                     Sign in with Google
                 </Button>
