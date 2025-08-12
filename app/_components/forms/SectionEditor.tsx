@@ -42,24 +42,48 @@ export function SectionEditor({ section, onUpdate }: SectionEditorProps) {
     useEffect(() => {
         setLocalSection(section)
         
-        try {
-            const sectionDesc = JSON.parse(section.SectionDesc || '{}')
-            
-            if (section.SectionType === 'radio' || section.SectionType === 'checkbox') {
-                setEditedOptions(sectionDesc.options || ['選択肢1', '選択肢2'])
-            } else if (section.SectionType === 'star') {
-                setEditedStarCount(sectionDesc.maxStars || 5)
-                setEditedOptions(sectionDesc.labels || [])
-            } else if (section.SectionType === 'slider') {
-                setEditedSliderSettings({
-                    min: sectionDesc.min || 0,
-                    max: sectionDesc.max || 10,
-                    divisions: sectionDesc.divisions || 5,
-                    labels: sectionDesc.labels || { min: '最小', max: '最大' }
-                })
+        // SectionDescを安全に解析する関数
+        const parseJsonSafely = (jsonString: string) => {
+            try {
+                console.log('解析しようとするJSON文字列:', JSON.stringify(jsonString))
+                
+                // 空文字列や無効な文字列の場合のチェック
+                if (!jsonString || jsonString.trim() === '' || jsonString.trim() === '{}') {
+                    console.log('空のJSON文字列、デフォルト値を使用')
+                    return {}
+                }
+                
+                // JSONかどうかをチェック
+                if (jsonString.startsWith('{') && jsonString.endsWith('}')) {
+                    const result = JSON.parse(jsonString)
+                    console.log('JSON解析成功:', result)
+                    return result
+                }
+                
+                // JSONでない場合は空オブジェクトを返す
+                console.log('JSON形式ではない、空オブジェクトを返す')
+                return {}
+            } catch (error) {
+                console.warn('JSON解析エラー、デフォルト値を使用:', error)
+                console.warn('問題のある文字列:', JSON.stringify(jsonString))
+                return {}
             }
-        } catch (error) {
-            console.error('セクション設定の解析エラー:', error)
+        }
+        
+        const sectionDesc = parseJsonSafely(section.SectionDesc || '')
+        
+        if (section.SectionType === 'radio' || section.SectionType === 'checkbox') {
+            setEditedOptions(sectionDesc.options || sectionDesc.labels || ['選択肢1', '選択肢2'])
+        } else if (section.SectionType === 'star') {
+            setEditedStarCount(sectionDesc.maxStars || 5)
+            setEditedOptions(sectionDesc.labels || [])
+        } else if (section.SectionType === 'slider') {
+            setEditedSliderSettings({
+                min: sectionDesc.min || 0,
+                max: sectionDesc.max || 10,
+                divisions: sectionDesc.divisions || 5,
+                labels: sectionDesc.labels || { min: '最小', max: '最大' }
+            })
         }
     }, [section])
 

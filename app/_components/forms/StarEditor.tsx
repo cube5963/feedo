@@ -67,7 +67,14 @@ export function StarEditor({ starCount, options, onUpdate, onSave }: StarEditorP
             }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
                     {Array.from({ length: starCount }, (_, index) => (
-                        <StarIcon key={index} sx={{ color: '#ffc107', fontSize: 32 }} />
+                        <StarIcon 
+                            key={index} 
+                            sx={{ 
+                                color: '#ffc107', 
+                                fontSize: `${Math.max(24, Math.min(48, 320 / starCount))}px`, // 横幅320px基準で自動調整
+                                transition: 'font-size 0.2s'
+                            }} 
+                        />
                     ))}
                 </Box>
                 <Typography variant="body2" color="text.secondary">

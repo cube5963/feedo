@@ -13,6 +13,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation'; // App Router 用
 import { createClient } from '@/utils/supabase/client'
+import Header from '@/app/_components/Header'
 
 // Supabaseフォーム型
 interface FormData {
@@ -120,12 +121,12 @@ export default function Project() {
     }
   };
 
-  // フォーム削除関数
+  // フォーム削除関数（論理削除）
   const handleDeleteForm = async (formId: string, formName: string, event: React.MouseEvent) => {
     // クリックイベントの伝播を停止（親のButtonBaseがクリックされないように）
     event.stopPropagation();
     
-    if (!confirm(`「${formName}」を削除しますか？\nこのフォーム内のすべてのセクションも同時に削除されます。\nこの操作は取り消せません。`)) {
+    if (!confirm(`「${formName}」を削除しますか？\nこのフォーム内のすべてのセクションも同時に削除されます。`)) {
       return;
     }
 
@@ -134,11 +135,12 @@ export default function Project() {
     try {
       const supabase = createClient();
       
-      // まず関連するSectionを削除
+      // まず関連するSectionを論理削除
       const { error: sectionError } = await supabase
         .from('Section')
-        .delete()
-        .eq('FormUUID', formId);
+        .update({ Delete: true, UpdatedAt: new Date().toISOString() })
+        .eq('FormUUID', formId)
+        .eq('Delete', false);
 
       if (sectionError) {
         console.error('セクション削除エラー:', sectionError);
@@ -146,11 +148,12 @@ export default function Project() {
         return;
       }
 
-      // 次にFormを削除
+      // 次にFormを論理削除
       const { error: formError } = await supabase
         .from('Form')
-        .delete()
-        .eq('FormUUID', formId);
+        .update({ Delete: true, UpdatedAt: new Date().toISOString() })
+        .eq('FormUUID', formId)
+        .eq('Delete', false);
 
       if (formError) {
         console.error('フォーム削除エラー:', formError);
@@ -160,7 +163,7 @@ export default function Project() {
 
       // ローカルのフォームリストから削除
       setForms(prev => prev.filter(form => form.FormUUID !== formId));
-      console.log(`フォーム ${formName} (ID: ${formId}) と関連セクションを削除しました`);
+      console.log(`フォーム ${formName} (ID: ${formId}) と関連セクションを論理削除しました`);
       
     } catch (error: any) {
       console.error('フォーム削除エラー詳細:', error);
@@ -171,9 +174,14 @@ export default function Project() {
   };
 
   return (
-    <>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
+      {/* ヘッダー */}
+      <Header 
+        title="プロジェクト一覧"
+        showBackButton={false}
+      />
 
-      <Box sx={{ maxWidth: 500, margin: 'auto', padding: 2 }}>
+      <Box sx={{ maxWidth: 500, margin: 'auto', pt: 10, pb: 4, px: 2 }}>
         {/* 新規作成 */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Button 
@@ -287,6 +295,6 @@ export default function Project() {
           <Checkbox>アンケートの質問文の自動改善</Checkbox>
         </div>
       </Modal>
-    </>
+    </Box>
   );
 }

@@ -127,23 +127,39 @@ export function SliderEditor({ settings, onUpdate, onSave }: SliderEditorProps) 
                     <Box sx={{ 
                         flex: 1, 
                         mx: 2, 
-                        height: 4, 
-                        backgroundColor: 'primary.main', 
-                        borderRadius: 2,
-                        position: 'relative'
+                        height: 24, 
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center'
                     }}>
                         <Box sx={{
-                            position: 'absolute',
-                            left: '50%',
-                            top: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: 16,
-                            height: 16,
+                            width: '100%',
+                            height: 4,
                             backgroundColor: 'primary.main',
-                            borderRadius: '50%',
-                            border: '2px solid white',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            borderRadius: 2,
+                            position: 'absolute',
+                            top: '50%',
+                            left: 0,
+                            transform: 'translateY(-50%)'
                         }} />
+                        {/* 区分数に応じた目盛り */}
+                        {Array.from({ length: settings.divisions + 1 }, (_, i) => (
+                            <Box
+                                key={i}
+                                sx={{
+                                    position: 'absolute',
+                                    left: `${(i / settings.divisions) * 100}%`,
+                                    top: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    width: 8,
+                                    height: 16,
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #ccc',
+                                    borderRadius: 1,
+                                    zIndex: 2
+                                }}
+                            />
+                        ))}
                     </Box>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {settings.labels.max} ({settings.max})

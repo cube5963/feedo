@@ -69,9 +69,9 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
     }
 
     return (
-        <Accordion 
-            ref={setNodeRef} 
-            style={style} 
+        <Accordion
+            ref={setNodeRef}
+            style={style}
             sx={{ 
                 mb: 2,
                 border: isDragging ? '2px dashed #1976d2' : '1px solid #e0e0e0',
@@ -81,7 +81,12 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                 '&:hover': {
                     boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
                 },
-                transition: 'all 0.2s ease-in-out'
+                transition: 'all 0.2s ease-in-out',
+                minHeight: 80, // 最小高さを設定してサイズを統一
+                '& .MuiAccordion-region': {
+                    // ドラッグ中もコンテンツ領域のサイズを維持
+                    minHeight: isDragging ? 'auto' : 'unset'
+                }
             }}
         >
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -111,10 +116,15 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                     expandIcon={<ExpandMoreIcon />}
                     sx={{ 
                         flex: 1,
+                        minHeight: 80, // AccordionSummaryの最小高さを統一
                         '& .MuiAccordionSummary-content': { 
                             alignItems: 'center',
                             gap: 2,
-                            py: 1
+                            py: 1,
+                            my: 1 // 上下マージンで高さを確保
+                        },
+                        '& .MuiAccordionSummary-expandIconWrapper': {
+                            color: 'primary.main'
                         }
                     }}
                 >

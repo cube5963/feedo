@@ -26,6 +26,7 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
                 const { data: formData, error: formError } = await supabase
                     .from('Form')
                     .select('FormUUID, FormName')
+                    .eq('Delete', false)
                     .order('CreatedAt', { ascending: false })
                 
                 if (formError) {
@@ -76,6 +77,7 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
                         .from('Section')
                         .select('*')
                         .eq('FormUUID', formIdToUse)
+                        .eq('Delete', false)
                         .order('SectionOrder', { ascending: true })
                     
                     if (sectionError) {
@@ -135,7 +137,7 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
     }
 
     const handleDeleteSection = async (sectionId: string) => {
-        if (!confirm('この質問を削除しますか？この操作は取り消せません。')) {
+        if (!confirm('この質問を削除しますか？')) {
             return
         }
 
@@ -149,8 +151,9 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
 
             const { error } = await supabase
                 .from('Section')
-                .delete()
+                .update({ Delete: true, UpdatedAt: new Date().toISOString() })
                 .eq('SectionUUID', sectionId)
+                .eq('Delete', false)
 
             if (error) {
                 console.error('質問削除エラー:', error)
