@@ -231,7 +231,7 @@ export default function Project() {
                       作成日 {new Date(form.CreatedAt).toLocaleDateString('ja-JP')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Form ID: {form.FormUUID}
+                      最終更新日 {new Date(form.UpdatedAt).toLocaleDateString('ja-JP')}
                     </Typography>
                   </CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
