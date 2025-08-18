@@ -175,20 +175,6 @@ export const SectionCreator = forwardRef<SectionCreatorRef, SectionCreatorProps>
                 mx: 'auto'
             }}
         >
-            <Typography 
-                variant="h5" 
-                component="h2" 
-                sx={{ 
-                    mb: 3, 
-                    fontWeight: 600,
-                    color: 'primary.main',
-                    borderBottom: '2px solid #e3f2fd',
-                    pb: 1
-                }}
-            >
-                新しい質問を作成
-            </Typography>
-
             <Box sx={{ mb: 3 }}>
                 <TextField
                     label="質問内容"
