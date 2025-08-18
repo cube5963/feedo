@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { FormType, Section, SliderSettings } from './types'
 import { 
     TextField,
@@ -35,9 +35,15 @@ interface SectionCreatorProps {
     onSave: (sectionData: Omit<Section, 'SectionUUID' | 'CreatedAt' | 'UpdatedAt'>) => Promise<void>
     loading: boolean
     sectionsCount: number
+    hideAddButton?: boolean
 }
 
-export function SectionCreator({ currentFormId, onSave, loading, sectionsCount }: SectionCreatorProps) {
+export interface SectionCreatorRef {
+    resetForm: () => void
+}
+
+export const SectionCreator = forwardRef<SectionCreatorRef, SectionCreatorProps>(
+    ({ currentFormId, onSave, loading, sectionsCount, hideAddButton = false }, ref) => {
     const [sectionName, setSectionName] = useState('')
     const [sectionType, setSectionType] = useState<FormType>('text')
     const [options, setOptions] = useState<string[]>(['選択肢1', '選択肢2'])
@@ -48,6 +54,22 @@ export function SectionCreator({ currentFormId, onSave, loading, sectionsCount }
         divisions: 5,
         labels: { min: '最小', max: '最大' }
     })
+
+    // refを通じてresetForm関数を公開
+    useImperativeHandle(ref, () => ({
+        resetForm: () => {
+            setSectionName('')
+            setSectionType('text')
+            setOptions(['選択肢1', '選択肢2'])
+            setStarCount(5)
+            setSliderSettings({
+                min: 0,
+                max: 10,
+                divisions: 5,
+                labels: { min: '最小', max: '最大' }
+            })
+        }
+    }))
 
     // セクションタイプが変更されたときの処理
     useEffect(() => {
@@ -590,10 +612,12 @@ export function SectionCreator({ currentFormId, onSave, loading, sectionsCount }
                         transition: 'all 0.2s ease-in-out'
                     }}
                 >
-                    {loading ? '保存中...' : 'セクションを追加'}
+                    {loading ? '保存中...' : (hideAddButton ? '質問を保存' : 'セクションを追加')}
                 </Button>
             </Box>
         </Paper>
     )
-}
+})
+
+SectionCreator.displayName = 'SectionCreator'
 

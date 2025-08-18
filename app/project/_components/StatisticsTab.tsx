@@ -10,8 +10,15 @@ import {
   CircularProgress,
   Alert,
   Divider,
-  Chip
+  Chip,
+  IconButton
 } from '@mui/material';
+import { PieChart } from '@mui/x-charts/PieChart';
+import { BarChart } from '@mui/x-charts/BarChart';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { createClient } from '@/utils/supabase/client';
 import { Section } from '@/app/_components/forms/types';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -40,6 +47,7 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<StatisticsData | null>(null);
+  const [starViewModes, setStarViewModes] = useState<Record<string, 'average' | 'chart'>>({});
 
   useEffect(() => {
     fetchStatistics();
@@ -273,6 +281,15 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
 
   const renderQuestionStatistics = (questionStat: QuestionStatistics) => {
     const { section, responseCount, statistics } = questionStat;
+    const sectionId = section.SectionUUID || '';
+    const currentStarViewMode = starViewModes[sectionId] || 'average';
+    
+    const toggleStarViewMode = () => {
+      setStarViewModes(prev => ({
+        ...prev,
+        [sectionId]: prev[sectionId] === 'average' ? 'chart' : 'average'
+      }));
+    };
 
     if (!statistics) {
       return (
@@ -292,6 +309,62 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
       );
     }
 
+    // PieChart用のデータを準備
+    const preparePieData = () => {
+      if (statistics.type === 'choice') {
+        return statistics.options.map((option: string, index: number) => ({
+          id: index,
+          value: statistics.counts[option] || 0,
+          label: option,
+        }));
+      } else if (statistics.type === 'star') {
+        return Object.entries(statistics.counts).map(([star, count], index) => ({
+          id: index,
+          value: Number(count),
+          label: `★${star}`,
+        }));
+      } else if (statistics.type === 'two_choice') {
+        return [
+          { id: 0, value: statistics.counts.true, label: 'はい' },
+          { id: 1, value: statistics.counts.false, label: 'いいえ' },
+        ];
+      }
+      return [];
+    };
+
+    // BarChart用のデータを準備（スター用）
+    const prepareBarData = () => {
+      if (statistics.type === 'star') {
+        const data = [];
+        const labels = [];
+        for (let i = 1; i <= statistics.maxStars; i++) {
+          data.push(statistics.counts[i] || 0);
+          labels.push(`★${i}`);
+        }
+        return { data, labels };
+      }
+      return { data: [], labels: [] };
+    };
+
+    // スター評価の星表示を生成
+    const renderStarRating = (average: number, maxStars: number) => {
+      const stars = [];
+      for (let i = 1; i <= maxStars; i++) {
+        if (i <= Math.floor(average)) {
+          stars.push(<StarIcon key={i} sx={{ color: '#ffc107', fontSize: 32 }} />);
+        } else if (i === Math.ceil(average) && average % 1 !== 0) {
+          // 半星の表現（簡易版）
+          stars.push(<StarIcon key={i} sx={{ color: '#ffc107', fontSize: 32, opacity: 0.5 }} />);
+        } else {
+          stars.push(<StarBorderIcon key={i} sx={{ color: '#ffc107', fontSize: 32 }} />);
+        }
+      }
+      return stars;
+    };
+
+    const pieData = preparePieData();
+    const barData = prepareBarData();
+
     return (
       <Card key={section.SectionUUID} sx={{ mb: 3 }}>
         <CardContent>
@@ -307,129 +380,142 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
             />
           </Box>
 
-          {statistics.type === 'choice' && (
-            <Box>
-              {statistics.options.map((option: string, index: number) => {
-                const count = statistics.counts[option] || 0;
-                const countNum = Number(count);
-                const percentage = statistics.total > 0 ? (countNum / statistics.total) * 100 : 0;
-                return (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">{option}</Typography>
-                      <Typography variant="body2">{countNum}件 ({percentage.toFixed(1)}%)</Typography>
+          {/* カードの左半分：グラフ、右半分：将来の機能用スペース */}
+          <Box sx={{ display: 'flex', gap: 2, minHeight: 250 }}>
+            {/* 左半分：グラフエリア */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              {/* 選択式・二択質問 */}
+              {(statistics.type === 'choice' || statistics.type === 'two_choice') && pieData.length > 0 && (
+                <PieChart
+                  series={[
+                    {
+                      data: pieData,
+                      highlightScope: { fade: 'global', highlight: 'item' },
+                      faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                    },
+                  ]}
+                  height={200}
+                />
+              )}
+
+              {/* スター評価のカルーセル */}
+              {statistics.type === 'star' && (
+                <Box sx={{ position: 'relative' }}>
+                  {currentStarViewMode === 'average' ? (
+                    <Box sx={{ textAlign: 'center', py: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                        {renderStarRating(statistics.average, statistics.maxStars)}
+                      </Box>
+                      <Typography variant="h4" color="primary.main" sx={{ mb: 1 }}>
+                        {statistics.average}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary">
+                        / {statistics.maxStars}
+                      </Typography>
                     </Box>
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: 8, 
-                      backgroundColor: '#f0f0f0', 
-                      borderRadius: 4,
-                      overflow: 'hidden'
-                    }}>
-                      <Box sx={{ 
-                        width: `${percentage}%`, 
-                        height: '100%', 
-                        backgroundColor: '#1976d2',
-                        transition: 'width 0.3s ease'
-                      }} />
-                    </Box>
+                  ) : (
+                    <BarChart
+                      xAxis={[{ scaleType: 'band', data: barData.labels }]}
+                      series={[{ data: barData.data, color: '#ffc107' }]}
+                      height={150}
+                    />
+                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <IconButton 
+                      onClick={toggleStarViewMode}
+                      sx={{ opacity: 0.7 }}
+                    >
+                      <ChevronLeftIcon />
+                    </IconButton>
+                    <Typography variant="body2" color="text.secondary">
+                      {currentStarViewMode === 'average' ? '平均評価' : '分布'}
+                    </Typography>
+                    <IconButton 
+                      onClick={toggleStarViewMode}
+                      sx={{ opacity: 0.7 }}
+                    >
+                      <ChevronRightIcon />
+                    </IconButton>
                   </Box>
-                );
-              })}
-            </Box>
-          )}
+                </Box>
+              )}
 
-          {statistics.type === 'star' && (
-            <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                平均評価: <strong>{statistics.average}</strong> / {statistics.maxStars}
-              </Typography>
-              {Object.entries(statistics.counts).map(([star, count]) => {
-                const percentage = statistics.total > 0 ? (Number(count) / statistics.total) * 100 : 0;
-                const countNum = Number(count);
-                return (
-                  <Box key={star} sx={{ mb: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2">★{star}</Typography>
-                      <Typography variant="body2">{countNum}件 ({percentage.toFixed(1)}%)</Typography>
-                    </Box>
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: 6, 
-                      backgroundColor: '#f0f0f0', 
-                      borderRadius: 3 
-                    }}>
-                      <Box sx={{ 
-                        width: `${percentage}%`, 
-                        height: '100%', 
-                        backgroundColor: '#ff9800',
-                        borderRadius: 3,
-                        transition: 'width 0.3s ease'
-                      }} />
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
+              {/* スライダー */}
+              {statistics.type === 'slider' && (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="h3" color="primary.main" sx={{ mb: 1 }}>
+                    {statistics.average}
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    平均値
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    最小値: {statistics.min} / 最大値: {statistics.max}
+                  </Typography>
+                </Box>
+              )}
 
-          {statistics.type === 'slider' && (
-            <Box>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                平均値: <strong>{statistics.average}</strong>
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                最小値: {statistics.min} / 最大値: {statistics.max}
-              </Typography>
-            </Box>
-          )}
-
-          {statistics.type === 'text' && (
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {statistics.total}件のテキスト回答があります
-              </Typography>
-              {statistics.responses.slice(0, 3).map((response: string, index: number) => (
-                <Typography 
-                  key={index} 
-                  variant="body2" 
+              {/* テキスト回答のスクロール表示 */}
+              {statistics.type === 'text' && (
+                <Box 
                   sx={{ 
-                    mb: 1, 
-                    p: 1, 
-                    backgroundColor: '#f5f5f5', 
-                    borderRadius: 1,
-                    fontStyle: 'italic'
+                    maxHeight: 200,
+                    overflowY: 'auto',
+                    py: 2,
+                    pr: 1, // スクロールバー用のパディング
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: '#f1f1f1',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: '#c1c1c1',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      backgroundColor: '#a8a8a8',
+                    },
                   }}
                 >
-                  "{response}"
-                </Typography>
-              ))}
-              {statistics.responses.length > 3 && (
-                <Typography variant="body2" color="text.secondary">
-                  ...他 {statistics.responses.length - 3}件
-                </Typography>
+                  {statistics.responses.map((response: string, index: number) => (
+                    <Typography 
+                      key={index} 
+                      variant="body2" 
+                      sx={{ 
+                        mb: 2, 
+                        p: 2, 
+                        backgroundColor: '#f5f5f5', 
+                        borderRadius: 1,
+                        fontStyle: 'italic',
+                        fontSize: '0.9rem',
+                        lineHeight: 1.4,
+                        wordBreak: 'break-word'
+                      }}
+                    >
+                      "{response}"
+                    </Typography>
+                  ))}
+                </Box>
               )}
             </Box>
-          )}
 
-          {statistics.type === 'two_choice' && (
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-around', mt: 2 }}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="primary.main">
-                    {statistics.counts.true}
-                  </Typography>
-                  <Typography variant="body2">はい</Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="error.main">
-                    {statistics.counts.false}
-                  </Typography>
-                  <Typography variant="body2">いいえ</Typography>
-                </Box>
-              </Box>
+            {/* 右半分：将来の機能用スペース */}
+            <Box sx={{ 
+              flex: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              backgroundColor: '#f8f9fa',
+              borderRadius: 1,
+              border: '1px dashed #ddd'
+            }}>
+              <Typography variant="body2" color="text.secondary">
+                将来の機能用スペース
+              </Typography>
             </Box>
-          )}
+          </Box>
         </CardContent>
       </Card>
     );

@@ -1,16 +1,25 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { FormProps, Section } from './types'
 import { FormSelector } from './FormSelector'
-import { SectionCreator } from './SectionCreator'
+import { SectionCreator, SectionCreatorRef } from './SectionCreator'
 import { SectionList } from './SectionList'
 import { arrayMove } from '@dnd-kit/sortable'
-import { Box, Alert } from '@mui/material'
+import { 
+    Box, 
+    Alert, 
+    Card,
+    CardContent,
+    Typography,
+    Button
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 
 export default function FormManager({ initialSections = [], formId, hideFormSelector = false }: FormProps) {
     const router = useRouter()
+    const sectionCreatorRef = useRef<SectionCreatorRef>(null)
     const [sections, setSections] = useState<Section[]>(initialSections)
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
@@ -125,8 +134,15 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
             }
 
             if (data && data.length > 0) {
-                setSections(prev => [...prev, data[0]])
+                const newSection = data[0]
+                
+                setSections(prev => [...prev, newSection])
                 setMessage('質問が正常に保存されました')
+                
+                // SectionCreatorをリセット
+                if (sectionCreatorRef.current?.resetForm) {
+                    sectionCreatorRef.current.resetForm()
+                }
             }
         } catch (error: any) {
             console.error('質問保存エラー詳細:', error)
@@ -276,7 +292,8 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
     
     return (
         <Box sx={{ 
-            width: '100%'
+            width: '100%',
+            position: 'relative'
         }}>
             {message && (
                 <Alert severity={message.includes('失敗') ? 'error' : 'success'} sx={{ mb: 2 }}>
@@ -294,12 +311,7 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
                 />
             )}
 
-            <SectionCreator 
-                currentFormId={currentFormId}
-                onSave={handleSaveSection}
-                loading={loading}
-                sectionsCount={sections.length}
-            />
+            {/* 質問一覧を上に移動 */}
             <SectionList 
                 sections={sections}
                 currentFormId={currentFormId}
@@ -307,6 +319,18 @@ export default function FormManager({ initialSections = [], formId, hideFormSele
                 onUpdate={handleUpdateSection}
                 onReorder={handleDragEnd}
             />
+
+            {/* 新しい質問作成 */}
+            <Box sx={{ mt: 3 }} id="new-question-card">
+                <SectionCreator 
+                    ref={sectionCreatorRef}
+                    currentFormId={currentFormId}
+                    onSave={handleSaveSection}
+                    loading={loading}
+                    sectionsCount={sections.length}
+                    hideAddButton={true} // セクション追加ボタンを非表示
+                />
+            </Box>
         </Box>
     )
 }

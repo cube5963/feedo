@@ -72,6 +72,7 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
         <Accordion
             ref={setNodeRef}
             style={style}
+            data-section-id={section.SectionUUID}
             sx={{ 
                 mb: 2,
                 border: isDragging ? '2px dashed #1976d2' : '1px solid #e0e0e0',

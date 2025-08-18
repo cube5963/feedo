@@ -316,9 +316,6 @@ export default function ProjectPage() {
                 {/* タブコンテンツ */}
                 {currentTab === 0 && (
                     <Box>
-                        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                            質問の編集
-                        </Typography>
                         <FormComponent formId={projectId} hideFormSelector={true} />
                     </Box>
                 )}
