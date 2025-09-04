@@ -8,6 +8,16 @@
 // Core API
 export { supabaseAPI } from './supabase';
 
+// Statistics API
+export {
+  getFormStatistics,
+  calculateSectionStatistics
+} from './statistics';
+export type {
+  SectionStatistics,
+  FormStatistics
+} from './statistics';
+
 // React Hooks
 export {
   useSurveys,

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -11,7 +11,9 @@ import {
   Alert,
   Divider,
   Chip,
-  IconButton
+  IconButton,
+  Button,
+  Tooltip
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
@@ -19,6 +21,7 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { createClient } from '@/utils/supabase/client';
 import { Section } from '@/app/_components/forms/types';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -45,12 +48,276 @@ interface StatisticsTabProps {
 
 export default function StatisticsTab({ projectId }: StatisticsTabProps) {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sectionRefreshing, setSectionRefreshing] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<StatisticsData | null>(null);
   const [starViewModes, setStarViewModes] = useState<Record<string, 'average' | 'chart'>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [sectionLastUpdated, setSectionLastUpdated] = useState<Record<string, Date>>({});
+  const [sseConnected, setSSEConnected] = useState(false);
+  const [sseError, setSSEError] = useState(false);
+
+  // SSEを使用したリアルタイム統計更新
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+    
+    const connectSSE = () => {
+      try {
+        console.log('🔗 SSE接続を開始します:', `/api/statistics/${projectId}/sse`);
+        eventSource = new EventSource(`/api/statistics/${projectId}/sse`);
+        
+        eventSource.onopen = () => {
+          console.log('✅ SSE接続が確立されました');
+          setSSEConnected(true);
+          setSSEError(false);
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('📨 SSEメッセージを受信:', data);
+            
+            if (data.type === 'statistics_update') {
+              console.log(`🎯 セクション ${data.sectionUUID} の統計を更新`);
+              updateSectionStatistics(data.sectionUUID, data.statistics);
+            } else if (data.type === 'connected') {
+              console.log('🤝 SSE接続が確認されました');
+              setSSEConnected(true);
+              setSSEError(false);
+            }
+          } catch (error) {
+            console.error('❌ SSEメッセージの解析エラー:', error);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('❌ SSEエラー:', error);
+          setSSEConnected(false);
+          setSSEError(true);
+          eventSource?.close();
+          
+          // 再接続を試行
+          setTimeout(() => {
+            console.log('🔄 SSE再接続を試行します');
+            connectSSE();
+          }, 5000);
+        };
+        
+      } catch (error) {
+        console.error('❌ SSE接続エラー:', error);
+      }
+    };
+
+    // 初期接続
+    connectSSE();
+
+    return () => {
+      if (eventSource) {
+        console.log('🔌 SSE接続を切断します');
+        eventSource.close();
+      }
+    };
+  }, [projectId]);
+
+  // SSEから受信した統計データでセクションを更新する関数
+  const updateSectionStatistics = useCallback((sectionUUID: string, newStatistics: any) => {
+    console.log(`📊 セクション ${sectionUUID} の統計を更新:`, newStatistics);
+    
+    setStatistics(prev => {
+      if (!prev) return prev;
+
+      const updatedQuestionStats = prev.questionStats.map(qs => {
+        if (qs.section.SectionUUID === sectionUUID) {
+          console.log(`✅ 統計更新: ${qs.section.SectionName}`);
+          return {
+            ...qs,
+            responseCount: newStatistics.totalResponses,
+            responses: newStatistics.responses.map((response: any, index: number) => ({
+              Answer: JSON.stringify(response),
+              AnswerUUID: `sse-${index}`, // 仮のUUID
+            })),
+            statistics: transformSSEStatistics(newStatistics, qs.section)
+          };
+        }
+        return qs;
+      });
+
+      // 全体の統計も更新
+      const totalResponses = Math.max(
+        prev.totalResponses,
+        newStatistics.totalResponses
+      );
+
+      return {
+        ...prev,
+        totalResponses,
+        questionStats: updatedQuestionStats
+      };
+    });
+
+    // セクション個別の最終更新時刻を記録
+    setSectionLastUpdated(prev => ({
+      ...prev,
+      [sectionUUID]: new Date()
+    }));
+  }, []);
+
+  // SSEから受信した統計データを既存の形式に変換
+  const transformSSEStatistics = (sseStats: any, section: Section) => {
+    switch (section.SectionType) {
+      case 'radio':
+      case 'checkbox':
+        return {
+          type: 'choice',
+          counts: sseStats.choices || {},
+          total: sseStats.totalResponses,
+          options: Object.keys(sseStats.choices || {})
+        };
+      case 'star':
+        return {
+          type: 'star',
+          counts: sseStats.ratingDistribution || {},
+          average: sseStats.averageRating || 0,
+          total: sseStats.totalResponses,
+          maxStars: 5 // デフォルト値
+        };
+      case 'slider':
+        return {
+          type: 'slider',
+          average: sseStats.average || 0,
+          min: sseStats.min || 0,
+          max: sseStats.max || 0,
+          total: sseStats.totalResponses,
+          settings: { min: 0, max: 10, divisions: 5, labels: { min: '最小', max: '最大' } }
+        };
+      case 'text':
+        return {
+          type: 'text',
+          total: sseStats.totalResponses,
+          responses: sseStats.responses || []
+        };
+      default:
+        return {
+          type: 'unknown',
+          total: sseStats.totalResponses
+        };
+    }
+  };
 
   useEffect(() => {
     fetchStatistics();
+  }, [projectId]);
+
+  // 特定のセクションの統計データを再取得する関数
+  const refreshSectionStatistics = useCallback(async (sectionUUID: string) => {
+    console.log('🔄 Refreshing section statistics for:', sectionUUID);
+    setSectionRefreshing(prev => ({ ...prev, [sectionUUID]: true }));
+
+    try {
+      const supabase = createClient();
+
+      // 現在の統計から該当セクションの情報を取得
+      let section: Section | undefined;
+      
+      // 現在の統計状態から該当セクションを取得
+      setStatistics(prev => {
+        if (prev) {
+          section = prev.questionStats.find(qs => qs.section.SectionUUID === sectionUUID)?.section;
+          console.log('📋 Found section:', section?.SectionName);
+        }
+        return prev;
+      });
+
+      // セクションが見つからない場合は全体を更新
+      if (!section) {
+        console.log('❌ Section not found, refreshing all data');
+        await handleRefreshData();
+        return;
+      }
+
+      console.log('📊 Fetching answers for section:', sectionUUID);
+      
+      // 該当セクションの回答データを取得
+      const { data: responses, error: responsesError } = await supabase
+        .from('Answer')
+        .select('*')
+        .eq('FormUUID', projectId)
+        .eq('SectionUUID', sectionUUID);
+
+      if (responsesError) {
+        console.error('❌ セクション回答データ取得エラー:', responsesError);
+        return;
+      }
+
+      const responseData = responses || [];
+      console.log(`📈 Found ${responseData.length} responses for section`);
+      
+      // 統計を再計算
+      const newStatistics = calculateQuestionStatistics(section, responseData);
+      console.log('🧮 Calculated new statistics:', newStatistics);
+
+      // 該当セクションの統計のみを更新
+      setStatistics(prev => {
+        if (!prev) return prev;
+
+        const updatedQuestionStats = prev.questionStats.map(qs => {
+          if (qs.section.SectionUUID === sectionUUID) {
+            console.log(`✅ Updating statistics for section: ${qs.section.SectionName}`);
+            return {
+              ...qs,
+              responseCount: responseData.length,
+              responses: responseData,
+              statistics: newStatistics
+            };
+          }
+          return qs;
+        });
+
+        // 全体の統計も更新
+        const totalUniqueResponders = new Set<string>();
+        updatedQuestionStats.forEach(qs => {
+          qs.responses.forEach(response => {
+            totalUniqueResponders.add(response.AnswerUUID || 'anonymous');
+          });
+        });
+
+        const updatedStats = {
+          ...prev,
+          totalResponses: totalUniqueResponders.size,
+          responseRate: prev.totalQuestions > 0 ? 
+            (updatedQuestionStats.reduce((sum, q) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
+          questionStats: updatedQuestionStats
+        };
+
+        console.log('📊 Updated overall statistics:', {
+          totalResponses: updatedStats.totalResponses,
+          responseRate: updatedStats.responseRate
+        });
+
+        return updatedStats;
+      });
+
+      // セクション個別の最終更新時刻を記録
+      setSectionLastUpdated(prev => ({
+        ...prev,
+        [sectionUUID]: new Date()
+      }));
+
+      console.log(`✅ Section ${sectionUUID} statistics updated successfully`);
+
+    } catch (error) {
+      console.error('❌ セクション統計更新エラー:', error);
+    } finally {
+      setSectionRefreshing(prev => ({ ...prev, [sectionUUID]: false }));
+    }
+  }, [projectId]); // statisticsを依存配列から削除
+
+  // 統計データを再取得する関数
+  const handleRefreshData = useCallback(async () => {
+    setRefreshing(true);
+    await fetchStatistics();
+    setRefreshing(false);
   }, [projectId]);
 
   const fetchStatistics = async () => {
@@ -123,6 +390,7 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
       };
 
       setStatistics(statisticsData);
+      setLastUpdated(new Date());
 
     } catch (error) {
       console.error('統計データ取得エラー:', error);
@@ -366,18 +634,72 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
     const barData = prepareBarData();
 
     return (
-      <Card key={section.SectionUUID} sx={{ mb: 3 }}>
-        <CardContent>
+      <Card 
+        key={section.SectionUUID} 
+        sx={{ 
+          mb: 3,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            boxShadow: 4,
+            transform: 'translateY(-2px)'
+          },
+          ...(refreshing && {
+            opacity: 0.7,
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+              animation: 'shimmer 1.5s infinite',
+            }
+          })
+        }}
+      >
+        <CardContent sx={{ position: 'relative' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
             <Typography variant="h6" sx={{ flex: 1 }}>
               {section.SectionName}
             </Typography>
-            <Chip 
-              label={`${responseCount}件の回答`} 
-              size="small" 
-              color="primary" 
-              variant="outlined"
-            />
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Chip 
+                label={`${responseCount}件の回答`} 
+                size="small" 
+                color="primary" 
+                variant="outlined"
+              />
+              {sectionLastUpdated[sectionId] && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                  {sectionLastUpdated[sectionId].toLocaleTimeString('ja-JP', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                </Typography>
+              )}
+              <Tooltip title="この質問の統計を更新">
+                <IconButton
+                  size="small"
+                  onClick={() => refreshSectionStatistics(sectionId)}
+                  disabled={sectionRefreshing[sectionId] || false}
+                  sx={{ 
+                    color: 'primary.main',
+                    '&:hover': { backgroundColor: 'primary.light', color: 'white' },
+                    ...(sectionRefreshing[sectionId] && {
+                      animation: 'spin 1s linear infinite',
+                    })
+                  }}
+                >
+                  {sectionRefreshing[sectionId] ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <RefreshIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
 
           {/* カードの左半分：グラフ、右半分：将来の機能用スペース */}
@@ -560,10 +882,75 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
   }
 
   return (
-    <Box sx={{ py: 4 }}>
-      <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-        アンケート統計
-      </Typography>
+    <Box sx={{ 
+      py: 4,
+      '& @keyframes shimmer': {
+        '0%': { transform: 'translateX(-100%)' },
+        '100%': { transform: 'translateX(100%)' }
+      }
+    }}>
+      {/* ヘッダーエリア */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          アンケート統計
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {lastUpdated && (
+            <Typography variant="body2" color="text.secondary">
+              最終更新: {lastUpdated.toLocaleTimeString('ja-JP')}
+            </Typography>
+          )}
+          
+          <Tooltip title="データを最新に更新">
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleRefreshData}
+              disabled={refreshing}
+              startIcon={
+                refreshing ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <RefreshIcon />
+                )
+              }
+              sx={{
+                minWidth: 100,
+                '& .MuiCircularProgress-root': {
+                  animation: 'spin 1s linear infinite',
+                },
+                '@keyframes spin': {
+                  '0%': {
+                    transform: 'rotate(0deg)',
+                  },
+                  '100%': {
+                    transform: 'rotate(360deg)',
+                  },
+                },
+              }}
+            >
+              {refreshing ? '更新中' : '更新'}
+            </Button>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {/* リアルタイム更新の通知 */}
+      {!loading && !error && (
+        <Alert 
+          severity={sseConnected ? "success" : sseError ? "warning" : "info"}
+          sx={{ mb: 3, bgcolor: sseConnected ? '#e8f5e8' : sseError ? '#fff3e0' : '#e3f2fd', borderLeft: `4px solid ${sseConnected ? '#4caf50' : sseError ? '#ff9800' : '#1976d2'}` }}
+        >
+          {sseConnected ? (
+            <>� リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
+          ) : sseError ? (
+            <>🟡 リアルタイム接続に問題があります。手動更新ボタンで最新データを取得してください。</>
+          ) : (
+            <>🔄 リアルタイム統計機能を初期化中です...</>
+          )}
+        </Alert>
+      )}
 
       {/* 概要統計 */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 4 }}>

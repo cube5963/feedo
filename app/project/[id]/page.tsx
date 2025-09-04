@@ -207,7 +207,32 @@ export default function ProjectPage() {
                     <Button
                         variant="contained"
                         startIcon={<QuestionAnswerIcon />}
-                        onClick={handleAnswer}
+                        onClick={async () => {
+                            try {
+                                const supabase = createClient()
+                                
+                                // 最初の質問を取得
+                                const { data: sections, error } = await supabase
+                                    .from('Section')
+                                    .select('SectionUUID')
+                                    .eq('FormUUID', projectId)
+                                    .eq('Delete', false)
+                                    .order('SectionOrder', { ascending: true })
+                                    .limit(1)
+
+                                if (error || !sections || sections.length === 0) {
+                                    setMessage('質問が見つかりません。まず質問を作成してください。')
+                                    return
+                                }
+
+                                // 最初の質問のアンケート回答ページを新しいタブで開く
+                                const answerUrl = `/answer/${projectId}/${sections[0].SectionUUID}`;
+                                window.open(answerUrl, '_blank');
+                            } catch (error) {
+                                console.error('アンケート回答エラー:', error)
+                                setMessage('アンケート回答ページの表示に失敗しました')
+                            }
+                        }}
                         sx={{ 
                             minWidth: 140,
                             height: 56  // TextFieldと同じ高さ

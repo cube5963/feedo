@@ -1,3 +1,6 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
 import { supabaseAPI } from './supabase';
 import type {
   CreateSurveyInput,
@@ -11,10 +14,6 @@ import type {
  * Server Actions for Survey operations
  * Next.js App Router用のサーバーアクション
  */
-
-'use server';
-
-import { revalidatePath } from 'next/cache';
 
 // Survey Actions
 export async function createSurveyAction(input: CreateSurveyInput) {
