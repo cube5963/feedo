@@ -5,7 +5,7 @@ import {
   CardContent, 
   TextField, 
   Typography, 
-  Box, 
+  Box,
   Alert,
   Stack
 } from "@mui/material";
@@ -13,8 +13,10 @@ import React, { useState } from 'react';
 import Header from '@/app/_components/Header';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SendIcon from '@mui/icons-material/Send';
+import { useRouter } from 'next/navigation'
 
 export default function AI(){
+    const router = useRouter()
     const [prompt, setprompt] = useState({
         title: '',
         text: '',
@@ -32,7 +34,7 @@ export default function AI(){
         const user = "1a0c3ad6-9843-4283-b67f-ca48d22fd920"
         //const url = "http://127.0.0.1:5000/";
         const url = "https://b177608f-5fe1-5eba-3b08-96b26bf0824f.mtayo.net/"
-        const send_prompt = `UserID:${user}です。以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
+        const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
 
         console.log(send_prompt)
 
@@ -47,7 +49,7 @@ export default function AI(){
                     "Content-Type": "application/json",
                     "Accept": "application/json",
                 },
-                body: JSON.stringify({ prompt: send_prompt }),
+                body: JSON.stringify({ prompt: send_prompt, userid: user }),
                 signal: controller.signal,
                 // CORSとキャッシュ設定
                 cache: 'no-cache',
@@ -67,6 +69,10 @@ export default function AI(){
             const data = await response.json();
             console.log("結果:", data.result);
             setSuccess("フォームが正常に作成されました！");
+
+            if(data.form_id != ""){
+                await router.push(`/project/${data.form_id}`)
+            }
             
         } catch (error) {
             console.error("詳細エラー:", error);
