@@ -943,7 +943,7 @@ export default function StatisticsTab({ projectId }: StatisticsTabProps) {
           sx={{ mb: 3, bgcolor: sseConnected ? '#e8f5e8' : sseError ? '#fff3e0' : '#e3f2fd', borderLeft: `4px solid ${sseConnected ? '#4caf50' : sseError ? '#ff9800' : '#1976d2'}` }}
         >
           {sseConnected ? (
-            <>� リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
+            <> リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
           ) : sseError ? (
             <>🟡 リアルタイム接続に問題があります。手動更新ボタンで最新データを取得してください。</>
           ) : (
