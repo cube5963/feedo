@@ -12,11 +12,11 @@ interface HeaderProps {
   maxWidth?: number;
 }
 
-export default function Header({ 
-  title, 
-  onBack, 
+export default function Header({
+  title,
+  onBack,
   showBackButton = true,
-  maxWidth = 1200 
+  maxWidth = 1200,
 }: HeaderProps) {
   const router = useRouter();
 
@@ -29,16 +29,16 @@ export default function Header({
   };
 
   return (
-    <AppBar 
-      position="fixed" 
-      sx={{ 
+    <AppBar
+      position="fixed"
+      sx={{
         backgroundColor: 'white',
         borderBottom: '1px solid #e0e0e0',
         boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
         zIndex: 1100
       }}
     >
-      <Toolbar sx={{ 
+      <Toolbar sx={{
         maxWidth: maxWidth,
         width: '100%',
         mx: 'auto',
@@ -49,7 +49,7 @@ export default function Header({
         {showBackButton && (
           <IconButton
             onClick={handleBack}
-            sx={{ 
+            sx={{
               color: '#333',
               '&:hover': {
                 backgroundColor: 'rgba(0,0,0,0.05)'
@@ -61,9 +61,9 @@ export default function Header({
         )}
 
         {/* タイトル */}
-        <Typography 
-          variant="h6" 
-          sx={{ 
+        <Typography
+          variant="h6"
+          sx={{
             flex: 1,
             textAlign: showBackButton ? 'center' : 'left',
             ml: showBackButton ? -6 : 0, // 戻るボタンがある場合は中央配置のため調整
