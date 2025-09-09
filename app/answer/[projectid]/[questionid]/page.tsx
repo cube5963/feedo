@@ -2,7 +2,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
-import {Box, Typography Alert, CircularProgress} from '@mui/material';
+import {Box, Typography, Alert, CircularProgress} from '@mui/material';
 import {createClient} from '@/utils/supabase/client';
 import {Section} from '@/app/_components/forms/types';
 import QuestionComponent from '@/app/preview/_components/QuestionComponent';

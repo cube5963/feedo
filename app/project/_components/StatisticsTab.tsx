@@ -268,7 +268,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             const responseData = responses || [];
 
             // AnswerUUIDでグループ化して重複を除去
-            const uniqueResponsesByAnswerUUID = responseData.reduce((acc, response) => {
+            const uniqueResponsesByAnswerUUID = responseData.reduce((acc: any, response: any) => {
                 acc[response.AnswerUUID] = response; // 同じAnswerUUIDの場合は上書き
                 return acc;
             }, {});
@@ -430,7 +430,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             }
 
             // AnswerUUIDごとにグループ化
-            const responsesByAnswerUUID = (allResponses || []).reduce((acc, response) => {
+            const responsesByAnswerUUID = (allResponses || []).reduce((acc: any, response: any) => {
                 if (!acc[response.AnswerUUID]) {
                     acc[response.AnswerUUID] = {};
                 }
@@ -444,7 +444,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             // 各質問の統計を計算
             const questionStats: QuestionStatistics[] = sections.map(section => {
                 const sectionResponses = Object.values(responsesByAnswerUUID)
-                    .map(answers => answers[section.SectionUUID])
+                    .map((answers: any) => answers[section.SectionUUID])
                     .filter(response => response !== undefined);
 
                 const statistics = calculateQuestionStatistics(section, sectionResponses);
