@@ -2,7 +2,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
-import {Box, Typography, Container, Alert, CircularProgress} from '@mui/material';
+import {Box, Typography Alert, CircularProgress} from '@mui/material';
 import {createClient} from '@/utils/supabase/client';
 import {Section} from '@/app/_components/forms/types';
 import QuestionComponent from '@/app/preview/_components/QuestionComponent';
@@ -15,6 +15,7 @@ interface FormData {
     FormName: string;
 }
 
+/*
 interface AnswerData {
     AnswerUUID?: string;
     FormUUID: string;
@@ -23,6 +24,7 @@ interface AnswerData {
     CreatedAt?: string;
     UpdatedAt?: string;
 }
+*/
 
 export default function AnswerQuestionPage() {
     const params = useParams();
@@ -142,6 +144,7 @@ export default function AnswerQuestionPage() {
         }
     };
     // 1設問ごとにリアルタイム集計を取得する関数例
+    /*
     const fetchStatisticsForSection = async (sectionUUID: string) => {
         try {
             const supabase = createClient();
@@ -161,6 +164,7 @@ export default function AnswerQuestionPage() {
             return null;
         }
     };
+    */
 
     const handlePrevious = async () => {
         // 現在の回答を保存してから移動

@@ -566,13 +566,14 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
         }
 
         answers.forEach(answer => {
-            if (typeof answer === 'number' && answer >= 1 && answer <= maxStars) {
+            if (answer >= 1 && answer <= maxStars) {
                 counts[answer]++;
             }
         });
 
         const average = answers.length > 0 ?
-            answers.reduce((sum, answer) => sum + (typeof answer === 'number' ? answer : 0), 0) / answers.length : 0;
+            //answers.reduce((sum, answer) => sum + (typeof answer === 'number' ? answer : 0), 0) / answers.length : 0;
+            answers.reduce((sum, answer) => sum + answer, 0) / answers.length : 0;
 
         return {
             type: 'star',
@@ -584,7 +585,8 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     };
 
     const calculateSliderStatistics = (answers: number[], settings: any) => {
-        const validAnswers = answers.filter(answer => typeof answer === 'number');
+        //const validAnswers = answers.filter(answer => typeof answer === 'number');
+        const validAnswers = answers;
         const average = validAnswers.length > 0 ?
             validAnswers.reduce((sum, answer) => sum + answer, 0) / validAnswers.length : 0;
         const min = validAnswers.length > 0 ? Math.min(...validAnswers) : 0;
@@ -609,7 +611,8 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     };
 
     const calculateTextStatistics = (answers: string[]) => {
-        const validAnswers = answers.filter(answer => typeof answer === 'string' && answer.trim() !== '');
+        //const validAnswers = answers.filter(answer => typeof answer === 'string' && answer.trim() !== '');
+        const validAnswers = answers.filter(answer => answer.trim() !== '');
         return {
             type: 'text',
             total: validAnswers.length,
