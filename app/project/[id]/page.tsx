@@ -1,15 +1,15 @@
 "use client"
-import { useParams, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import {useParams, useRouter} from 'next/navigation'
+import {useState, useEffect, useRef} from 'react'
 import FormComponent from '@/app/_components/form'
-import { 
-    Box, 
-    Typography, 
-    Paper, 
-    TextField, 
-    Container, 
-    Alert, 
-    Fade, 
+import {
+    Box,
+    Typography,
+    Paper,
+    TextField,
+    Container,
+    Alert,
+    Fade,
     Button,
     Tabs,
     Tab,
@@ -18,7 +18,7 @@ import {
     FormLabel,
     Avatar
 } from '@mui/material'
-import { createClient } from '@/utils/supabase/client'
+import {createClient} from '@/utils/supabase/client'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import Header from '@/app/_components/Header'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
@@ -37,6 +37,10 @@ export default function ProjectPage() {
     const [message, setMessage] = useState("")
     const [currentTab, setCurrentTab] = useState(0) // タブの状態を追加
 
+    const [imageUrl, setImageUrl] = useState<string | null>(null)
+    const [uploading, setUploading] = useState(false)
+    const inputRef = useRef<HTMLInputElement>(null)
+
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setCurrentTab(newValue)
     }
@@ -45,14 +49,14 @@ export default function ProjectPage() {
     const handleAnswer = async () => {
         try {
             const supabase = createClient()
-            
+
             // 最初の質問を取得
-            const { data: sections, error } = await supabase
+            const {data: sections, error} = await supabase
                 .from('Section')
                 .select('SectionUUID')
                 .eq('FormUUID', projectId)
                 .eq('Delete', false)
-                .order('SectionOrder', { ascending: true })
+                .order('SectionOrder', {ascending: true})
                 .limit(1)
 
             if (error || !sections || sections.length === 0) {
@@ -72,14 +76,14 @@ export default function ProjectPage() {
     const handlePreview = async () => {
         try {
             const supabase = createClient()
-            
+
             // 最初の質問を取得
-            const { data: sections, error } = await supabase
+            const {data: sections, error} = await supabase
                 .from('Section')
                 .select('SectionUUID')
                 .eq('FormUUID', projectId)
                 .eq('Delete', false)
-                .order('SectionOrder', { ascending: true })
+                .order('SectionOrder', {ascending: true})
                 .limit(1)
 
             if (error || !sections || sections.length === 0) {
@@ -99,7 +103,7 @@ export default function ProjectPage() {
     const fetchFormName = async () => {
         try {
             const supabase = createClient()
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('Form')
                 .select('FormName')
                 .eq('FormUUID', projectId)
@@ -117,16 +121,18 @@ export default function ProjectPage() {
             console.error('フォーム名取得エラー:', error)
             router.push('/project')
         }
-    }    // フォーム名を更新する関数
+    }
+
+    // フォーム名を更新する関数
     const updateFormName = async (newFormName: string) => {
         if (!newFormName.trim()) return
 
         setLoading(true)
         try {
             const supabase = createClient()
-            const { error } = await supabase
+            const {error} = await supabase
                 .from('Form')
-                .update({ FormName: newFormName, UpdatedAt: new Date().toISOString() })
+                .update({FormName: newFormName, UpdatedAt: new Date().toISOString()})
                 .eq('FormUUID', projectId)
                 .eq('Delete', false)
 
@@ -146,7 +152,69 @@ export default function ProjectPage() {
         }
     }
 
+    function getNearestSize(value: number): number {
+        const sizes = [64, 128, 256]
+        return sizes.reduce((prev, curr) =>
+            Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+        )
+    }
 
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        if (file.size > 5 * 1024 * 1024) {
+            setMessage('画像サイズは5MB以下にしてください')
+            return
+        }
+        setUploading(true)
+
+        const img = new window.Image()
+        img.src = URL.createObjectURL(file)
+        await new Promise((resolve) => { img.onload = resolve })
+
+        const maxSide = Math.max(img.width, img.height)
+        const targetSize = getNearestSize(maxSide)
+        const canvas = document.createElement('canvas')
+        canvas.width = targetSize
+        canvas.height = targetSize
+        const ctx = canvas.getContext('2d')!
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, targetSize, targetSize)
+        // 中央に描画
+        const offsetX = (targetSize - img.width * (targetSize / maxSide)) / 2
+        const offsetY = (targetSize - img.height * (targetSize / maxSide)) / 2
+        ctx.drawImage(
+            img,
+            offsetX,
+            offsetY,
+            img.width * (targetSize / maxSide),
+            img.height * (targetSize / maxSide)
+        )
+
+        const blob: Blob = await new Promise((resolve) =>
+            canvas.toBlob((b) => resolve(b!), file.type)
+        )
+
+        const supabase = createClient()
+        const filePath = `feedo/${projectId}/${file.name}`
+
+        const {error} = await supabase.storage
+            .from('feedo')
+            .upload(filePath, blob, {upsert: true})
+
+        if (error) {
+            setMessage('画像のアップロードに失敗しました')
+            setUploading(false)
+            return
+        }
+
+        const {data} = supabase.storage
+            .from('feedo')
+            .getPublicUrl(filePath)
+        setImageUrl(data.publicUrl)
+        setUploading(false)
+        setMessage('画像をアップロードしました')
+    }
 
     // コンポーネントマウント時にフォーム名を取得
     useEffect(() => {
@@ -155,22 +223,39 @@ export default function ProjectPage() {
         }
     }, [projectId])
 
+    useEffect(() => {
+        const fetchImage = async () => {
+            const supabase = createClient()
+            // 画像ファイル名が分かっている場合は指定、なければリスト取得
+            const {data, error} = await supabase.storage
+                .from('feedo')
+                .list(`${projectId}/`, {limit: 1})
+            if (data && data.length > 0) {
+                const {data: urlData} = supabase.storage
+                    .from('feedo')
+                    .getPublicUrl(`feedo/${projectId}/${data[0].name}`)
+                setImageUrl(urlData.publicUrl)
+            }
+        }
+        fetchImage()
+    }, [projectId])
+
+
     // 統計タブのコンテンツ
     const renderStatisticsTab = () => (
-        <StatisticsTab projectId={projectId} />
+        <StatisticsTab projectId={projectId}/>
     )
 
     // 設定タブのレンダリング
     const renderSettingsTab = () => (
         <Box>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            <Typography variant="h6" sx={{mb: 3, fontWeight: 600}}>
                 プロジェクト設定
             </Typography>
-            
-            
-            
+
+
             {/* プロジェクト設定 */}
-            <Paper 
+            <Paper
                 elevation={2}
                 sx={{
                     p: 4,
@@ -179,11 +264,11 @@ export default function ProjectPage() {
                     border: '1px solid #e0e0e0'
                 }}
             >
-                <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 600 }}>
+                <Typography variant="subtitle1" sx={{mb: 3, fontWeight: 600}}>
                     基本設定
                 </Typography>
-                
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', mb: 3 }}>
+
+                <Box sx={{display: 'flex', gap: 2, alignItems: 'flex-end', mb: 3}}>
                     <TextField
                         label="プロジェクト名"
                         variant="outlined"
@@ -191,7 +276,7 @@ export default function ProjectPage() {
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
                         onBlur={() => updateFormName(formTitle)}
-                        inputProps={{ maxLength: 50 }}
+                        inputProps={{maxLength: 50}}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 updateFormName(formTitle)
@@ -202,9 +287,9 @@ export default function ProjectPage() {
                     />
                     <Button
                         variant="outlined"
-                        startIcon={<VisibilityIcon />}
+                        startIcon={<VisibilityIcon/>}
                         onClick={handlePreview}
-                        sx={{ 
+                        sx={{
                             minWidth: 120,
                             height: 56  // TextFieldと同じ高さ
                         }}
@@ -213,18 +298,18 @@ export default function ProjectPage() {
                     </Button>
                     <Button
                         variant="contained"
-                        startIcon={<QuestionAnswerIcon />}
+                        startIcon={<QuestionAnswerIcon/>}
                         onClick={async () => {
                             try {
                                 const supabase = createClient()
-                                
+
                                 // 最初の質問を取得
-                                const { data: sections, error } = await supabase
+                                const {data: sections, error} = await supabase
                                     .from('Section')
                                     .select('SectionUUID')
                                     .eq('FormUUID', projectId)
                                     .eq('Delete', false)
-                                    .order('SectionOrder', { ascending: true })
+                                    .order('SectionOrder', {ascending: true})
                                     .limit(1)
 
                                 if (error || !sections || sections.length === 0) {
@@ -240,7 +325,7 @@ export default function ProjectPage() {
                                 setMessage('アンケート回答ページの表示に失敗しました')
                             }
                         }}
-                        sx={{ 
+                        sx={{
                             minWidth: 140,
                             height: 56  // TextFieldと同じ高さ
                         }}
@@ -248,27 +333,27 @@ export default function ProjectPage() {
                         アンケート回答
                     </Button>
                 </Box>
-                
-                <Divider sx={{ my: 3 }} />
-                
+
+                <Divider sx={{my: 3}}/>
+
                 {/* 追加設定オプション */}
-                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                <Typography variant="subtitle2" sx={{mb: 2, fontWeight: 600}}>
                     その他の設定
                 </Typography>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     <FormControl component="fieldset">
                         <FormLabel component="legend">回答の公開設定</FormLabel>
-                        <Box sx={{ mt: 1 }}>
+                        <Box sx={{mt: 1}}>
                             <Typography variant="body2" color="text.secondary">
                                 回答結果の表示設定を選択してください
                             </Typography>
                         </Box>
                     </FormControl>
-                    
+
                     <FormControl component="fieldset">
                         <FormLabel component="legend">アクセス制限</FormLabel>
-                        <Box sx={{ mt: 1 }}>
+                        <Box sx={{mt: 1}}>
                             <Typography variant="body2" color="text.secondary">
                                 プロジェクトへのアクセス権限を設定できます
                             </Typography>
@@ -276,8 +361,8 @@ export default function ProjectPage() {
                     </FormControl>
                 </Box>
             </Paper>
-            {/* プロジェクト画像設定（デザインのみ） */}
-            <Paper 
+            {/* プロジェクト設定（デザインのみ） */}
+            <Paper
                 elevation={2}
                 sx={{
                     p: 4,
@@ -286,45 +371,68 @@ export default function ProjectPage() {
                     border: '1px solid #e0e0e0'
                 }}
             >
-                <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 600 }}>
+                <Typography variant="subtitle1" sx={{mb: 3, fontWeight: 600}}>
                     プロジェクト画像
                 </Typography>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 3 }}>
+
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 3, mb: 3}}>
                     <Avatar
+                        src={imageUrl || undefined}
                         sx={{
                             width: 80,
                             height: 80,
                             bgcolor: 'primary.main'
                         }}
                     >
-                        <PhotoCameraIcon sx={{ fontSize: 40 }} />
+                        {!imageUrl && <PhotoCameraIcon sx={{fontSize: 40}}/>}
                     </Avatar>
-                    
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+
+                    <Box sx={{flex: 1}}>
+                        <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
                             プロジェクトのイメージ画像をアップロードできます。
-                            <br />
+                            <br/>
                             対応形式: JPEG、PNG、WebP（最大5MB）
                         </Typography>
-                        
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+
+                        <Box sx={{display: 'flex', gap: 1}}>
                             <Button
                                 variant="outlined"
-                                startIcon={<CloudUploadIcon />}
+                                startIcon={<CloudUploadIcon/>}
                                 size="small"
-                                disabled
-                                sx={{ opacity: 0.6 }}
+                                onClick={() => inputRef.current?.click()}
+                                disabled={uploading}
                             >
-                                画像を選択（準備中）
+                                画像を選択
                             </Button>
-                            
+                            <input
+                                type="file"
+                                accept="image/png, image/jpeg, image/webp"
+                                style={{display: 'none'}}
+                                ref={inputRef}
+                                onChange={handleFileChange}
+                            />
                             <Button
                                 variant="text"
                                 color="error"
                                 size="small"
-                                disabled
-                                sx={{ opacity: 0.6 }}
+                                disabled={!imageUrl || uploading}
+                                onClick={async () => {
+                                    if (!imageUrl) return
+                                    setUploading(true)
+                                    const supabase = createClient()
+                                    // 画像ファイル名を取得
+                                    const {data} = await supabase.storage
+                                        .from('feedo')
+                                        .list(`${projectId}/`, {limit: 1})
+                                    if (data && data.length > 0) {
+                                        await supabase.storage
+                                            .from('feedo')
+                                            .remove([`${projectId}/${data[0].name}`])
+                                    }
+                                    setImageUrl(null)
+                                    setUploading(false)
+                                    setMessage('画像を削除しました')
+                                }}
                             >
                                 削除
                             </Button>
@@ -341,7 +449,7 @@ export default function ProjectPage() {
             backgroundColor: '#ffffff'
         }}>
             {/* ヘッダー */}
-            <Header 
+            <Header
                 title="プロジェクト編集"
                 onBack={() => router.push('/project')}
             />
@@ -356,9 +464,9 @@ export default function ProjectPage() {
                 width: '100%'
             }}>
                 {/* タブバー */}
-                <Paper sx={{ mb: 3, borderRadius: 2 }}>
-                    <Tabs 
-                        value={currentTab} 
+                <Paper sx={{mb: 3, borderRadius: 2}}>
+                    <Tabs
+                        value={currentTab}
                         onChange={handleTabChange}
                         variant="fullWidth"
                         sx={{
@@ -370,19 +478,19 @@ export default function ProjectPage() {
                             }
                         }}
                     >
-                        <Tab 
-                            icon={<QuestionAnswerIcon />} 
-                            label="質問" 
+                        <Tab
+                            icon={<QuestionAnswerIcon/>}
+                            label="質問"
                             iconPosition="start"
                         />
-                        <Tab 
-                            icon={<BarChartIcon />} 
-                            label="統計" 
+                        <Tab
+                            icon={<BarChartIcon/>}
+                            label="統計"
                             iconPosition="start"
                         />
-                        <Tab 
-                            icon={<SettingsIcon />} 
-                            label="設定" 
+                        <Tab
+                            icon={<SettingsIcon/>}
+                            label="設定"
                             iconPosition="start"
                         />
                     </Tabs>
@@ -390,7 +498,7 @@ export default function ProjectPage() {
 
                 {/* メッセージ表示 */}
                 {message && (
-                    <Alert 
+                    <Alert
                         severity={message.includes('失敗') ? 'error' : 'success'}
                         sx={{
                             mb: 3,
@@ -404,7 +512,7 @@ export default function ProjectPage() {
                 {/* タブコンテンツ */}
                 {currentTab === 0 && (
                     <Box>
-                        <FormComponent formId={projectId} hideFormSelector={true} />
+                        <FormComponent formId={projectId} hideFormSelector={true}/>
                     </Box>
                 )}
                 {currentTab === 1 && renderStatisticsTab()}
