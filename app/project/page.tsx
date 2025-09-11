@@ -7,7 +7,10 @@ import {
   Box,
   Button,
   Avatar,
-  ButtonBase,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -25,9 +28,7 @@ interface FormData {
   Delete: boolean;
 }
 
-import { useState } from 'react';
-import { useEffect } from 'react';
-import { Modal, Button as AntdButton, Checkbox } from 'antd';
+import { useState, useEffect } from 'react';
 
 export default function Project() {
   const router = useRouter();
@@ -195,7 +196,7 @@ export default function Project() {
           <Button 
             variant="outlined" 
             sx={{ width: 100, height: 100 }} 
-            onClick={handleCreateNewForm}
+            onClick={() => setCreateOpen(true)}
             disabled={loading}
           >
             <Typography variant="h3">{loading ? '...' : '＋'}</Typography>
@@ -269,40 +270,44 @@ export default function Project() {
           </>
         )}
       </Box>
-
-      <Modal
-        title="新規作成"
-        open={createOpen}
-        onCancel={() => setCreateOpen(false)}
-        footer={(_, { }) => (
-          <>
-            <AntdButton type="primary" onClick={useai}>使用します</AntdButton>
-            <AntdButton onClick={() => setCreateOpen(false)}>使用しません</AntdButton>
-          </>
-        )}
-      >
-        <p>AIを使用しますか？</p>
-      </Modal>
-      <Modal
-        title="初期設定"
-        open={useAi}
-        onCancel={() => setUseAi(false)}
-        footer={(_, { }) => (
-          <>
-            <AntdButton onClick={handleBack}>戻る</AntdButton>
-            <AntdButton type="primary" onClick={() => setUseAi(false)}>次へ</AntdButton>
-          </>
-        )}
-      >
-        <p>AIにしてもらうサポートを選択してください。</p>
-        <div>
-          <Checkbox>アンケートのテンプレート作成</Checkbox>
-          <br />
-          <Checkbox>アンケートの要約とアドバイス</Checkbox>
-          <br />
-          <Checkbox>アンケートの質問文の自動改善</Checkbox>
-        </div>
-      </Modal>
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
+        <DialogTitle>新規作成</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mt: 1 }}>アンケートの作成にAIを使用しますか？</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              setCreateOpen(false);
+              router.push('/project/ai');
+            }}
+          >
+            はい
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setCreateOpen(false);
+              handleCreateNewForm();
+            }}
+          >
+            いいえ
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={useAi} onClose={() => setUseAi(false)}>
+        <DialogTitle>初期設定</DialogTitle>
+        <DialogContent>
+          {/* 必要ならここに初期設定内容を追加 */}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleBack}>戻る</Button>
+          <Button variant="contained" onClick={() => setUseAi(false)}>次へ</Button>
+        </DialogActions>
+      </Dialog>
+      
     </Box>
   );
 }

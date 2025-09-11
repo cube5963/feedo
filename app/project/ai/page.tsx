@@ -41,7 +41,7 @@ export default function AI(){
         try {
             // タイムアウト機能付きのfetch
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒タイムアウト
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒タイムアウト
 
             const response = await fetch(url, {
                 method: "POST",

@@ -360,7 +360,6 @@ export default function QuestionComponent({ section, onAnswer, isAnswered = fals
             if (!desc || desc.trim() === '' || desc.trim() === '{}') {
               return { min: 0, max: 10, divisions: 5, labels: { min: '最小', max: '最大' } };
             }
-            
             if (desc.startsWith('{') && desc.endsWith('}')) {
               const parsed = JSON.parse(desc);
               return {
@@ -378,89 +377,30 @@ export default function QuestionComponent({ section, onAnswer, isAnswered = fals
 
         const sliderSettings = getSliderSettings(section.SectionDesc);
         const step = (sliderSettings.max - sliderSettings.min) / sliderSettings.divisions;
-        
+
         return (
           <Box sx={{ py: 4, px: 3 }}>
-            <Typography variant="body1" color="text.primary" sx={{ mb: 4, textAlign: 'center', fontWeight: 500 }}>
+            <Typography variant="body1" color="text.primary" sx={{ mb: 2, textAlign: 'center' }}>
               スライダーで評価してください
             </Typography>
-            <Box sx={{ 
-              position: 'relative', 
-              backgroundColor: '#f8f9fa',
-              borderRadius: 3,
-              p: 3,
-              border: '1px solid #e0e0e0'
-            }}>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  textAlign: 'center', 
-                  mb: 3, 
-                  fontWeight: 600,
-                  color: '#1976d2' 
-                }}
-              >
-                {answer || sliderSettings.min}
+            <Slider
+              value={answer || sliderSettings.min}
+              onChange={(event, newValue) => handleSliderChange(newValue as number)}
+              min={sliderSettings.min}
+              max={sliderSettings.max}
+              step={step}
+              marks={Array.from({ length: sliderSettings.divisions + 1 }, (_, i) => ({
+                value: sliderSettings.min + (i * step),
+                label: i === 0 ? sliderSettings.labels.min : 
+                       i === sliderSettings.divisions ? sliderSettings.labels.max : ''
+              }))}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {sliderSettings.min}
               </Typography>
-              <Slider
-                value={answer || sliderSettings.min}
-                onChange={(event, newValue) => handleSliderChange(newValue as number)}
-                min={sliderSettings.min}
-                max={sliderSettings.max}
-                step={step}
-                marks={Array.from({ length: sliderSettings.divisions + 1 }, (_, i) => ({
-                  value: sliderSettings.min + (i * step),
-                  label: i === 0 ? sliderSettings.labels.min : 
-                         i === sliderSettings.divisions ? sliderSettings.labels.max : ''
-                }))}
-                sx={{
-                  height: 12,
-                  '& .MuiSlider-thumb': {
-                    height: 32,
-                    width: 32,
-                    backgroundColor: '#1976d2',
-                    boxShadow: '0 4px 8px rgba(25, 118, 210, 0.3)',
-                    '&:hover': {
-                      boxShadow: '0 6px 12px rgba(25, 118, 210, 0.4)',
-                      transform: 'scale(1.1)'
-                    }
-                  },
-                  '& .MuiSlider-track': {
-                    height: 12,
-                    borderRadius: 6,
-                    background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)'
-                  },
-                  '& .MuiSlider-rail': {
-                    height: 12,
-                    borderRadius: 6,
-                    backgroundColor: '#e0e0e0'
-                  },
-                  '& .MuiSlider-mark': {
-                    backgroundColor: '#1976d2',
-                    height: 8,
-                    width: 2
-                  },
-                  '& .MuiSlider-markLabel': {
-                    fontSize: '0.8rem',
-                    fontWeight: 500
-                  }
-                }}
-              />
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                mt: 2,
-                px: 1
-              }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  {sliderSettings.min}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  {sliderSettings.max}
-                </Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
-                {sliderSettings.divisions}段階評価
+              <Typography variant="body2" color="text.secondary">
+                {sliderSettings.max}
               </Typography>
             </Box>
           </Box>
