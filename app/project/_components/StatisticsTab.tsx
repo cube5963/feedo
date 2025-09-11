@@ -55,72 +55,170 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     const [starViewModes, setStarViewModes] = useState<Record<string, 'average' | 'chart'>>({});
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [sectionLastUpdated, setSectionLastUpdated] = useState<Record<string, Date>>({});
-    const [sseConnected, setSSEConnected] = useState(false);
-    const [sseError, setSSEError] = useState(false);
+    const [realtimeConnected, setRealtimeConnected] = useState(false);
+    const [realtimeError, setRealtimeError] = useState(false);
 
-    // SSEを使用したリアルタイム統計更新
+    // Supabase Realtimeを使用したリアルタイム統計更新
     useEffect(() => {
-        let eventSource: EventSource | null = null;
+        const supabase = createClient();
+        let channel: any = null;
 
-        const connectSSE = () => {
+        const setupRealtimeSubscription = () => {
             try {
-                console.log('🔗 SSE接続を開始します:', `/api/statistics/${projectId}/sse`);
-                eventSource = new EventSource(`/api/statistics/${projectId}/sse`);
-
-                eventSource.onopen = () => {
-                    console.log('✅ SSE接続が確立されました');
-                    setSSEConnected(true);
-                    setSSEError(false);
-                };
-
-                eventSource.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        console.log('📨 SSEメッセージを受信:', data);
-
-                        if (data.type === 'statistics_update') {
-                            console.log(`🎯 セクション ${data.sectionUUID} の統計を更新`);
-                            updateSectionStatistics(data.sectionUUID, data.statistics);
-                        } else if (data.type === 'connected') {
-                            console.log('🤝 SSE接続が確認されました');
-                            setSSEConnected(true);
-                            setSSEError(false);
+                console.log('🔗 Supabase Realtime接続を開始します');
+                
+                // Answerテーブルの変更を監視
+                channel = supabase
+                    .channel('statistics-updates')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*', // INSERT, UPDATE, DELETE すべてのイベントを監視
+                            schema: 'public',
+                            table: 'Answer',
+                            filter: `FormUUID=eq.${projectId}` // 該当プロジェクトのみ
+                        },
+                        (payload) => {
+                            console.log('📨 回答データが更新されました:', payload);
+                            handleAnswerChange(payload);
                         }
-                    } catch (error) {
-                        console.error('❌ SSEメッセージの解析エラー:', error);
-                    }
-                };
-
-                eventSource.onerror = (error) => {
-                    console.error('❌ SSEエラー:', error);
-                    setSSEConnected(false);
-                    setSSEError(true);
-                    eventSource?.close();
-
-                    // 再接続を試行
-                    setTimeout(() => {
-                        console.log('🔄 SSE再接続を試行します');
-                        connectSSE();
-                    }, 5000);
-                };
+                    )
+                    .subscribe((status) => {
+                        console.log('📡 Realtime接続状態:', status);
+                        if (status === 'SUBSCRIBED') {
+                            console.log('✅ Realtime接続が確立されました');
+                            setRealtimeConnected(true);
+                            setRealtimeError(false);
+                        } else if (status === 'CHANNEL_ERROR') {
+                            console.error('❌ Realtime接続エラー');
+                            setRealtimeConnected(false);
+                            setRealtimeError(true);
+                        }
+                    });
 
             } catch (error) {
-                console.error('❌ SSE接続エラー:', error);
+                console.error('❌ Realtime接続エラー:', error);
+                setRealtimeError(true);
             }
         };
 
         // 初期接続
-        connectSSE();
+        setupRealtimeSubscription();
 
         return () => {
-            if (eventSource) {
-                console.log('🔌 SSE接続を切断します');
-                eventSource.close();
+            if (channel) {
+                console.log('🔌 Realtime接続を切断します');
+                supabase.removeChannel(channel);
             }
         };
     }, [projectId]);
 
-    // SSEから受信した統計データでセクションを更新する関数
+    // 回答データの変更を処理する関数（リアルタイム即座更新）
+    const handleAnswerChange = useCallback(async (payload: any) => {
+        console.log('� 回答データの変更を即座に処理中:', payload);
+        
+        const { eventType, new: newRecord, old: oldRecord } = payload;
+        
+        if (eventType === 'INSERT' && newRecord) {
+            console.log('➕ 新しい回答が追加されました:', newRecord);
+            // 即座にローカル統計を更新
+            await updateStatisticsInstantly(newRecord.SectionUUID, 'INSERT', newRecord);
+        } else if (eventType === 'UPDATE' && newRecord) {
+            console.log('✏️ 回答が更新されました:', newRecord);
+            await updateStatisticsInstantly(newRecord.SectionUUID, 'UPDATE', newRecord);
+        } else if (eventType === 'DELETE' && oldRecord) {
+            console.log('🗑️ 回答が削除されました:', oldRecord);
+            await updateStatisticsInstantly(oldRecord.SectionUUID, 'DELETE', oldRecord);
+        }
+    }, []);
+
+    // 統計を即座に更新する関数
+    const updateStatisticsInstantly = useCallback(async (sectionUUID: string, eventType: string, record: any) => {
+        console.log(`⚡ セクション ${sectionUUID} の統計を即座に更新中...`);
+        
+        try {
+            const supabase = createClient();
+            
+            // 最新の回答データを取得（効率的にセクション単位で取得）
+            const { data: responses, error } = await supabase
+                .from('Answer')
+                .select('*')
+                .eq('FormUUID', projectId)
+                .eq('SectionUUID', sectionUUID);
+
+            if (error) {
+                console.error('❌ 回答データ取得エラー:', error);
+                return;
+            }
+
+            // AnswerUUIDでグループ化して重複を除去
+            const uniqueResponsesByAnswerUUID = (responses || []).reduce((acc: any, response: any) => {
+                acc[response.AnswerUUID] = response; // 同じAnswerUUIDの場合は上書き
+                return acc;
+            }, {});
+
+            const uniqueResponses = Object.values(uniqueResponsesByAnswerUUID);
+            console.log(`📈 セクション ${sectionUUID} の最新回答数: ${uniqueResponses.length}`);
+
+            // ローカル状態を即座に更新
+            setStatistics(prev => {
+                if (!prev) return prev;
+
+                const updatedQuestionStats = prev.questionStats.map(qs => {
+                    if (qs.section.SectionUUID === sectionUUID) {
+                        const newStatistics = calculateQuestionStatistics(qs.section, uniqueResponses);
+                        console.log(`🎯 統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
+                        
+                        return {
+                            ...qs,
+                            responseCount: uniqueResponses.length,
+                            responses: uniqueResponses,
+                            statistics: newStatistics
+                        };
+                    }
+                    return qs;
+                });
+
+                // 全体統計も即座に更新
+                const totalUniqueResponders = new Set<string>();
+                updatedQuestionStats.forEach(qs => {
+                    qs.responses.forEach(response => {
+                        totalUniqueResponders.add(response.AnswerUUID || 'anonymous');
+                    });
+                });
+
+                const updatedStats = {
+                    ...prev,
+                    totalResponses: totalUniqueResponders.size,
+                    responseRate: prev.totalQuestions > 0 ?
+                        (updatedQuestionStats.reduce((sum, q) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
+                    questionStats: updatedQuestionStats
+                };
+
+                console.log('📊 全体統計即座更新完了:', {
+                    totalResponses: updatedStats.totalResponses,
+                    responseRate: Math.round(updatedStats.responseRate * 100) / 100
+                });
+
+                return updatedStats;
+            });
+
+            // セクション個別の最終更新時刻を記録
+            setSectionLastUpdated(prev => ({
+                ...prev,
+                [sectionUUID]: new Date()
+            }));
+
+            console.log(`✅ セクション ${sectionUUID} の統計を即座に更新完了`);
+
+        } catch (error) {
+            console.error('❌ 統計即座更新エラー:', error);
+            // エラー時はフォールバックとして従来の方法を使用
+            refreshSectionStatistics(sectionUUID);
+        }
+    }, [projectId]);
+
+    // SSEから受信した統計データでセクションを更新する関数（既存のSSE用、互換性のため残す）
     const updateSectionStatistics = useCallback((sectionUUID: string, newStatistics: any) => {
         console.log(`📊 セクション ${sectionUUID} の統計を更新:`, newStatistics);
 
@@ -752,10 +850,30 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                         </Typography>
                         <Box sx={{display: 'flex', gap: 1, alignItems: 'center'}}>
                             <Chip
+                                key={`chip-${sectionId}-${responseCount}`} // リアルタイム更新のキー
                                 label={`${responseCount}件の回答`}
                                 size="small"
                                 color="primary"
                                 variant="outlined"
+                                sx={{
+                                    transition: 'all 0.4s ease-in-out',
+                                    // リアルタイム更新時のバウンス効果
+                                    '@keyframes bounce': {
+                                        '0%': { transform: 'scale(1)' },
+                                        '50%': { transform: 'scale(1.1)' },
+                                        '100%': { transform: 'scale(1)' }
+                                    },
+                                    animation: sectionLastUpdated[sectionId] && 
+                                              (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                              'bounce 0.6s ease-in-out' : 'none',
+                                    // 新しい回答時の背景色変化
+                                    backgroundColor: sectionLastUpdated[sectionId] && 
+                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                                    'primary.light' : 'transparent',
+                                    color: sectionLastUpdated[sectionId] && 
+                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                          'primary.contrastText' : 'primary.main'
+                                }}
                             />
                             {sectionLastUpdated[sectionId] && (
                                 <Typography variant="caption" color="text.secondary" sx={{fontSize: '0.7rem'}}>
@@ -795,27 +913,74 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                         <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
                             {/* 選択式・二択質問 */}
                             {(statistics.type === 'choice' || statistics.type === 'two_choice') && pieData.length > 0 && (
-                                <PieChart
-                                    series={[
-                                        {
-                                            data: pieData,
-                                            highlightScope: {fade: 'global', highlight: 'item'},
-                                            faded: {innerRadius: 30, additionalRadius: -30, color: 'gray'},
+                                <Box
+                                    key={`pie-${sectionId}-${responseCount}`} // リアルタイム更新のキー
+                                    sx={{
+                                        transition: 'all 0.5s ease-in-out',
+                                        transform: sectionRefreshing[sectionId] ? 'scale(0.98)' : 'scale(1)',
+                                        opacity: sectionRefreshing[sectionId] ? 0.8 : 1,
+                                        '& .MuiChartsLegend-series': {
+                                            transition: 'all 0.3s ease'
                                         },
-                                    ]}
-                                    height={200}
-                                />
+                                        // リアルタイム更新時の光る効果
+                                        '@keyframes pulse': {
+                                            '0%': { boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.4)' },
+                                            '70%': { boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)' },
+                                            '100%': { boxShadow: '0 0 0 0 rgba(25, 118, 210, 0)' }
+                                        },
+                                        animation: sectionLastUpdated[sectionId] && 
+                                                  (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                                  'pulse 1s ease-out' : 'none'
+                                    }}
+                                >
+                                    <PieChart
+                                        series={[
+                                            {
+                                                data: pieData,
+                                                highlightScope: {fade: 'global', highlight: 'item'},
+                                                faded: {innerRadius: 30, additionalRadius: -30, color: 'gray'},
+                                            },
+                                        ]}
+                                        height={200}
+                                    />
+                                </Box>
                             )}
 
                             {/* スター評価のカルーセル */}
                             {statistics.type === 'star' && (
                                 <Box sx={{position: 'relative'}}>
                                     {currentStarViewMode === 'average' ? (
-                                        <Box sx={{textAlign: 'center', py: 2}}>
+                                        <Box 
+                                            key={`star-avg-${sectionId}-${responseCount}`} // リアルタイム更新のキー
+                                            sx={{
+                                                textAlign: 'center', 
+                                                py: 2,
+                                                transition: 'all 0.5s ease-in-out',
+                                                // リアルタイム更新時の星の輝き効果
+                                                '@keyframes starGlow': {
+                                                    '0%': { transform: 'scale(1)', filter: 'brightness(1)' },
+                                                    '50%': { transform: 'scale(1.05)', filter: 'brightness(1.2)' },
+                                                    '100%': { transform: 'scale(1)', filter: 'brightness(1)' }
+                                                },
+                                                animation: sectionLastUpdated[sectionId] && 
+                                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                                          'starGlow 1.2s ease-in-out' : 'none'
+                                            }}
+                                        >
                                             <Box sx={{display: 'flex', justifyContent: 'center', mb: 2}}>
                                                 {renderStarRating(statistics.average, statistics.maxStars)}
                                             </Box>
-                                            <Typography variant="h4" color="primary.main" sx={{mb: 1}}>
+                                            <Typography 
+                                                variant="h4" 
+                                                color="primary.main" 
+                                                sx={{
+                                                    mb: 1,
+                                                    transition: 'all 0.3s ease',
+                                                    fontWeight: sectionLastUpdated[sectionId] && 
+                                                               (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                                               'bold' : 'normal'
+                                                }}
+                                            >
                                                 {statistics.average}
                                             </Typography>
                                             <Typography variant="body1" color="text.secondary">
@@ -823,11 +988,29 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                             </Typography>
                                         </Box>
                                     ) : (
-                                        <BarChart
-                                            xAxis={[{scaleType: 'band', data: barData.labels}]}
-                                            series={[{data: barData.data, color: '#ffc107'}]}
-                                            height={150}
-                                        />
+                                        <Box
+                                            key={`bar-${sectionId}-${responseCount}`} // リアルタイム更新のキー
+                                            sx={{
+                                                transition: 'all 0.5s ease-in-out',
+                                                transform: sectionRefreshing[sectionId] ? 'scale(0.98)' : 'scale(1)',
+                                                opacity: sectionRefreshing[sectionId] ? 0.8 : 1,
+                                                // リアルタイム更新時のハイライト効果
+                                                '@keyframes glow': {
+                                                    '0%': { filter: 'brightness(1)' },
+                                                    '50%': { filter: 'brightness(1.1)' },
+                                                    '100%': { filter: 'brightness(1)' }
+                                                },
+                                                animation: sectionLastUpdated[sectionId] && 
+                                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
+                                                          'glow 1.5s ease-in-out' : 'none'
+                                            }}
+                                        >
+                                            <BarChart
+                                                xAxis={[{scaleType: 'band', data: barData.labels}]}
+                                                series={[{data: barData.data, color: '#ffc107'}]}
+                                                height={150}
+                                            />
+                                        </Box>
                                     )}
                                     <Box sx={{
                                         display: 'flex',
@@ -1031,16 +1214,16 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             {/* リアルタイム更新の通知 */}
             {!loading && !error && (
                 <Alert
-                    severity={sseConnected ? "success" : sseError ? "warning" : "info"}
+                    severity={realtimeConnected ? "success" : realtimeError ? "warning" : "info"}
                     sx={{
                         mb: 3,
-                        bgcolor: sseConnected ? '#e8f5e8' : sseError ? '#fff3e0' : '#e3f2fd',
-                        borderLeft: `4px solid ${sseConnected ? '#4caf50' : sseError ? '#ff9800' : '#1976d2'}`
+                        bgcolor: realtimeConnected ? '#e8f5e8' : realtimeError ? '#fff3e0' : '#e3f2fd',
+                        borderLeft: `4px solid ${realtimeConnected ? '#4caf50' : realtimeError ? '#ff9800' : '#1976d2'}`
                     }}
                 >
-                    {sseConnected ? (
-                        <> リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
-                    ) : sseError ? (
+                    {realtimeConnected ? (
+                        <> ✅ リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
+                    ) : realtimeError ? (
                         <>🟡 リアルタイム接続に問題があります。手動更新ボタンで最新データを取得してください。</>
                     ) : (
                         <>🔄 リアルタイム統計機能を初期化中です...</>
@@ -1050,10 +1233,34 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
 
             {/* 概要統計 */}
             <Box sx={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 4}}>
-                <Card>
+                <Card sx={{
+                    transition: 'all 0.3s ease',
+                    // リアルタイム更新時の強調効果
+                    '@keyframes highlight': {
+                        '0%': { backgroundColor: 'background.paper' },
+                        '50%': { backgroundColor: 'primary.light' },
+                        '100%': { backgroundColor: 'background.paper' }
+                    },
+                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
+                               'highlight 2s ease-in-out' : 'none'
+                }}>
                     <CardContent sx={{textAlign: 'center'}}>
                         <PeopleIcon sx={{fontSize: 40, color: '#1976d2', mb: 1}}/>
-                        <Typography variant="h4" color="primary.main">
+                        <Typography 
+                            key={`total-responses-${statistics.totalResponses}`} // リアルタイム更新のキー
+                            variant="h4" 
+                            color="primary.main"
+                            sx={{
+                                transition: 'all 0.4s ease-in-out',
+                                '@keyframes countUp': {
+                                    '0%': { transform: 'scale(1)' },
+                                    '50%': { transform: 'scale(1.15)' },
+                                    '100%': { transform: 'scale(1)' }
+                                },
+                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
+                                          'countUp 0.8s ease-in-out' : 'none'
+                            }}
+                        >
                             {statistics.totalResponses}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -1074,10 +1281,24 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card sx={{
+                    transition: 'all 0.3s ease',
+                    // 回答率更新時の効果
+                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
+                               'highlight 2s ease-in-out' : 'none'
+                }}>
                     <CardContent sx={{textAlign: 'center'}}>
                         <BarChartIcon sx={{fontSize: 40, color: '#4caf50', mb: 1}}/>
-                        <Typography variant="h4" color="primary.main">
+                        <Typography 
+                            key={`response-rate-${statistics.responseRate.toFixed(1)}`} // リアルタイム更新のキー
+                            variant="h4" 
+                            color="primary.main"
+                            sx={{
+                                transition: 'all 0.4s ease-in-out',
+                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
+                                          'countUp 0.8s ease-in-out' : 'none'
+                            }}
+                        >
                             {statistics.responseRate.toFixed(1)}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
