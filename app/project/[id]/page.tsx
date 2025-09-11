@@ -15,7 +15,8 @@ import {
     Tab,
     Divider,
     FormControl,
-    FormLabel
+    FormLabel,
+    Avatar
 } from '@mui/material'
 import { createClient } from '@/utils/supabase/client'
 import VisibilityIcon from '@mui/icons-material/Visibility'
@@ -23,6 +24,8 @@ import Header from '@/app/_components/Header'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import SettingsIcon from '@mui/icons-material/Settings'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import StatisticsTab from '@/app/project/_components/StatisticsTab'
 
 export default function ProjectPage() {
@@ -103,22 +106,18 @@ export default function ProjectPage() {
                 .eq('Delete', false)
                 .single()
 
-            if (error) {
+            if (error || !data) {
                 console.error('フォーム名取得エラー:', error)
-                setMessage('フォーム名の取得に失敗しました')
+                router.push('/project')
                 return
             }
 
-            if (data) {
-                setFormTitle(data.FormName)
-            }
+            setFormTitle(data.FormName || '')
         } catch (error) {
             console.error('フォーム名取得エラー:', error)
-            setMessage('フォーム名の取得に失敗しました')
+            router.push('/project')
         }
-    }
-
-    // フォーム名を更新する関数
+    }    // フォーム名を更新する関数
     const updateFormName = async (newFormName: string) => {
         if (!newFormName.trim()) return
 
@@ -147,6 +146,8 @@ export default function ProjectPage() {
         }
     }
 
+
+
     // コンポーネントマウント時にフォーム名を取得
     useEffect(() => {
         if (projectId) {
@@ -166,6 +167,8 @@ export default function ProjectPage() {
                 プロジェクト設定
             </Typography>
             
+            
+            
             {/* プロジェクト設定 */}
             <Paper 
                 elevation={2}
@@ -176,6 +179,10 @@ export default function ProjectPage() {
                     border: '1px solid #e0e0e0'
                 }}
             >
+                <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 600 }}>
+                    基本設定
+                </Typography>
+                
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', mb: 3 }}>
                     <TextField
                         label="プロジェクト名"
@@ -267,6 +274,62 @@ export default function ProjectPage() {
                             </Typography>
                         </Box>
                     </FormControl>
+                </Box>
+            </Paper>
+            {/* プロジェクト画像設定（デザインのみ） */}
+            <Paper 
+                elevation={2}
+                sx={{
+                    p: 4,
+                    mb: 4,
+                    borderRadius: 2,
+                    border: '1px solid #e0e0e0'
+                }}
+            >
+                <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 600 }}>
+                    プロジェクト画像
+                </Typography>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 3 }}>
+                    <Avatar
+                        sx={{
+                            width: 80,
+                            height: 80,
+                            bgcolor: 'primary.main'
+                        }}
+                    >
+                        <PhotoCameraIcon sx={{ fontSize: 40 }} />
+                    </Avatar>
+                    
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            プロジェクトのイメージ画像をアップロードできます。
+                            <br />
+                            対応形式: JPEG、PNG、WebP（最大5MB）
+                        </Typography>
+                        
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<CloudUploadIcon />}
+                                size="small"
+                                disabled
+                                sx={{ opacity: 0.6 }}
+                            >
+                                画像を選択（準備中）
+                            </Button>
+                            
+                            <Button
+                                variant="text"
+                                color="error"
+                                size="small"
+                                disabled
+                                sx={{ opacity: 0.6 }}
+                            >
+                                削除
+                            </Button>
+                        </Box>
+                    </Box>
                 </Box>
             </Paper>
         </Box>
