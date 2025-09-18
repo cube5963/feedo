@@ -9,34 +9,63 @@ import {
   Alert,
   Stack
 } from "@mui/material";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/app/_components/Header';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SendIcon from '@mui/icons-material/Send';
 import { useRouter } from 'next/navigation'
+import { createPersonalClient } from '@/utils/supabase/personalClient';
+import type { User } from '@supabase/supabase-js';
 
 export default function AI(){
     const router = useRouter()
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(false);
     const [prompt, setprompt] = useState({
         title: '',
         text: '',
     })
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    // ユーザー認証状態の確認
+    useEffect(() => {
+        const checkUser = async () => {
+            const supabase = createPersonalClient();
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            setUser(currentUser);
+            
+            if (!currentUser) {
+                router.push('/account/signin');
+            }
+        };
+        
+        checkUser();
+    }, [router]);
+
     const submit = async (e: React.FormEvent)=> {
         e.preventDefault()
+        
+        // ログインチェック
+        if (!user) {
+            setError('ログインが必要です');
+            router.push('/account/signin');
+            return;
+        }
+        
         setLoading(true);
         setError(null);
         setSuccess(null);
         
-        const user = "1a0c3ad6-9843-4283-b67f-ca48d22fd920"
+        // 実際のログインユーザーのIDを使用
+        const userId = user.id;
+        console.log('ログインユーザーID:', userId, 'Email:', user.email);
+        
         //const url = "http://127.0.0.1:5000/";
         const url = "https://b177608f-5fe1-5eba-3b08-96b26bf0824f.mtayo.net/"
         const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
 
-        console.log(send_prompt)
+        console.log('送信プロンプト:', send_prompt)
 
         try {
             // タイムアウト機能付きのfetch
@@ -49,7 +78,7 @@ export default function AI(){
                     "Content-Type": "application/json",
                     "Accept": "application/json",
                 },
-                body: JSON.stringify({ prompt: send_prompt, userid: user }),
+                body: JSON.stringify({ prompt: send_prompt, userid: userId }),
                 signal: controller.signal,
                 // CORSとキャッシュ設定
                 cache: 'no-cache',
@@ -177,7 +206,7 @@ export default function AI(){
                             <Box sx={{ display: 'flex', gap: 2, pt: 2 }}>
                                 <Button 
                                     type="submit"
-                                    disabled={loading || !prompt.title || !prompt.text}
+                                    disabled={loading || !prompt.title || !prompt.text || !user}
                                     variant="contained"
                                     size="large"
                                     startIcon={loading ? null : <SendIcon />}
@@ -188,7 +217,7 @@ export default function AI(){
                                         fontWeight: 600
                                     }}
                                 >
-                                    {loading ? "作成中..." : "フォームを作成"}
+                                    {!user ? "ログインが必要です" : loading ? "作成中..." : "フォームを作成"}
                                 </Button>
                             </Box>
                         </Stack>

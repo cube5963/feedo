@@ -2,8 +2,14 @@
 import {
     Button,
     Paper,
-    TextField
+    TextField,
+    Typography,
+    Box,
+    Divider,
+    Alert,
+    Link
 } from "@mui/material";
+import { Google } from "@mui/icons-material";
 import Webnavi from "../../_components/webnavi";
 import { createClient } from "@/utils/supabase/client";
 import React, { useState } from 'react';
@@ -13,99 +19,171 @@ export default function SignIn() {
         email: '',
         password: '',
     });
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
+        setError(null);
+        
         const { email, password } = formValues;
         if (!email || !password) {
-            alert("メールアドレスとパスワードを入力してください。");
+            setError("メールアドレスとパスワードを入力してください。");
+            setLoading(false);
             return;
         }
+        
         const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
 
+        setLoading(false);
         if (error) {
-            alert(`エラーが発生しました: ${error.message}`);
+            setError(`エラーが発生しました: ${error.message}`);
         } else {
-            alert("ログインに成功しました。");
+            window.location.href = '/project';
         }
     }
 
     const google_signin = async (e: React.MouseEvent) => {
         e.preventDefault();
+        setError(null);
+        
         const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: 'http://localhost:3000/project', // リダイレクト先を指定
+                redirectTo: 'http://localhost:3000/project',
             },
         });
 
         if (error) {
-            alert(`エラーが発生しました: ${error.message}`);
+            setError(`エラーが発生しました: ${error.message}`);
         }
-
-        console.log("Google SignIn Data:", data);
     }
 
     return (
-        <div>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
             <Webnavi />
-            <Paper
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "20px",
-                    margin: "20px auto",
-                    marginTop: "30px",
-                    width: "60%",
-                    height: "50%",
-                    backgroundColor: "#fff",
-                    borderRadius: "10px",
-                    border: "1px solid #ccc",
-                }}>
-                <h1>
-                    SignIn
-                </h1>
-                <h3>ユーザーネーム</h3>
-                <TextField
-                    style={{
-                        width: "50%",
-                        marginBottom: "20px",
-                        borderRadius: "5px",
-                        border: "1px solid #ccc",
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: 'calc(100vh - 80px)',
+                    padding: 2,
+                }}
+            >
+                <Paper
+                    elevation={3}
+                    sx={{
+                        width: '100%',
+                        maxWidth: 420,
+                        padding: 4,
+                        borderRadius: 3,
                     }}
-                    value={formValues.email}
-                    onChange={(e) => setFormValues({ ...formValues, email: e.target.value })}
-                />
-                <h3>メールアドレス</h3>
-                <TextField
-                    style={{
-                        width: "50%",
-                        marginBottom: "20px",
-                        borderRadius: "5px",
-                        border: "1px solid #ccc",
-                    }}
-                    value={formValues.password}
-                    onChange={(e) => setFormValues({ ...formValues, password: e.target.value })}
-                />
-                <br />
-                <a href="" style={{ marginTop: "10px" }}>パスワードをお忘れですか？</a>
-                <a href="/account/signup" style={{ marginTop: "10px" }}>アカウントをお持ち出ない方はこちら</a>
-                <Button variant="contained" onClick={submit}>ログイン</Button>
-                <Button variant="contained" onClick={google_signin}>Google</Button>
-                <Button variant="outlined" startIcon=
-                    {<img src="https://images-ext-1.discordapp.net/external/cPbexFq_vc92gA47x_BvRBqXQQkk0OlRugeuUNbcotg/https/developers.google.com/identity/images/g-logo.png?format=webp&quality=lossless&width=142&height=142"
-                        style={{ width: "30px", height: "30px" }} onClick={google_signin} />}
-                    style={{ width: "200px", height: "50px" }}>
-                    Sign in with Google
-                </Button>
-            </Paper>
+                >
+                    <Box sx={{ textAlign: 'center', mb: 3 }}>
+                        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                            サインイン
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            アカウントにサインインしてください
+                        </Typography>
+                    </Box>
+
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+
+                    <Box component="form" onSubmit={submit} sx={{ mb: 3 }}>
+                        <TextField
+                            fullWidth
+                            label="メールアドレス"
+                            type="email"
+                            variant="outlined"
+                            value={formValues.email}
+                            onChange={(e) => setFormValues({ ...formValues, email: e.target.value })}
+                            sx={{ mb: 2 }}
+                            required
+                        />
+                        <TextField
+                            fullWidth
+                            label="パスワード"
+                            type="password"
+                            variant="outlined"
+                            value={formValues.password}
+                            onChange={(e) => setFormValues({ ...formValues, password: e.target.value })}
+                            sx={{ mb: 3 }}
+                            required
+                        />
+
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            size="large"
+                            disabled={loading}
+                            sx={{
+                                py: 1.5,
+                                mb: 2,
+                                backgroundColor: '#000',
+                                '&:hover': {
+                                    backgroundColor: '#333',
+                                },
+                            }}
+                        >
+                            {loading ? 'サインイン中...' : 'サインイン'}
+                        </Button>
+
+                        <Box sx={{ textAlign: 'center', mb: 2 }}>
+                            <Link href="#" variant="body2">
+                                パスワードをお忘れですか？
+                            </Link>
+                        </Box>
+                    </Box>
+
+                    <Divider sx={{ mb: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            または
+                        </Typography>
+                    </Divider>
+
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        size="large"
+                        startIcon={<Google />}
+                        onClick={google_signin}
+                        sx={{
+                            py: 1.5,
+                            mb: 3,
+                            borderColor: '#e0e0e0',
+                            color: '#424242',
+                            '&:hover': {
+                                borderColor: '#bdbdbd',
+                                backgroundColor: '#f5f5f5',
+                            },
+                        }}
+                    >
+                        Googleでサインイン
+                    </Button>
+
+                    <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                            アカウントをお持ちでない方は{' '}
+                            <Link href="/account/signup" sx={{ textDecoration: 'none' }}>
+                                こちら
+                            </Link>
+                        </Typography>
+                    </Box>
+                </Paper>
+            </Box>
         </div>
     );
 }

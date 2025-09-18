@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import {Box, Typography, Alert, CircularProgress} from '@mui/material';
-import {createClient} from '@/utils/supabase/client';
+import {createAnswerClient} from '@/utils/supabase/answerClient';
 import {Section} from '@/app/_components/forms/types';
 import QuestionComponent from '@/app/preview/_components/QuestionComponent';
 import ProgressBar from '@/app/preview/_components/ProgressBar';
@@ -61,7 +61,7 @@ export default function AnswerQuestionPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const supabase = createClient();
+            const supabase = createAnswerClient(); // 回答専用クライアント使用
 
             // フォーム情報を取得
             const {data: formData, error: formError} = await supabase
@@ -94,7 +94,7 @@ export default function AnswerQuestionPage() {
             setSections(sectionsData || []);
 
             // 現在の質問を特定
-            const currentSectionData = sectionsData?.find(s => s.SectionUUID === questionId);
+            const currentSectionData = sectionsData?.find((s: Section) => s.SectionUUID === questionId);
             if (!currentSectionData) {
                 setError('指定された質問が見つかりません');
                 return;
@@ -103,7 +103,7 @@ export default function AnswerQuestionPage() {
             setCurrentSection(currentSectionData);
 
             // 現在の質問のインデックスを取得
-            const index = sectionsData?.findIndex(s => s.SectionUUID === questionId) ?? 0;
+            const index = sectionsData?.findIndex((s: Section) => s.SectionUUID === questionId) ?? 0;
             setCurrentIndex(index);
 
         } catch (error) {
@@ -126,7 +126,7 @@ export default function AnswerQuestionPage() {
     // 常に新規回答をinsertする
     const saveAnswer = async (sectionUUID: string, answerData: any) => {
         try {
-            const supabase = createClient();
+            const supabase = createAnswerClient(); // 回答専用クライアント使用
             const answerPayload = {
                 FormUUID: projectId,
                 SectionUUID: sectionUUID,
