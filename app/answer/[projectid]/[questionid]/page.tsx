@@ -131,13 +131,32 @@ export default function AnswerQuestionPage() {
                 FormUUID: projectId,
                 SectionUUID: sectionUUID,
                 AnswerUUID: answerUUID,
-                Answer: JSON.stringify(answerData)
+                Answer: JSON.stringify({ text: answerData, predict: "" })
             };
-            const {error} = await supabase
+            const { data, error } = await supabase
                 .from('Answer')
-                .insert([answerPayload]);
+                .insert([answerPayload])
+                .select();
+            //console.log(data);
             if (error) {
                 console.error('回答保存エラー:', JSON.stringify(error));
+            } else {
+                const section = sections.find(s => s.SectionUUID === sectionUUID);
+                const answerSectionUUID = data[0].AnswerSectionUUID;
+                if (section && section.SectionType === "text") {
+                    await fetch('http://localhost:8080/tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: 'predict',
+                            payload: {
+                                answer_id: answerSectionUUID
+                            }
+                        })
+                    });
+                }
             }
         } catch (error) {
             console.error('回答保存処理エラー:', JSON.stringify(error));

@@ -66,7 +66,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
         const setupRealtimeSubscription = () => {
             try {
                 console.log('🔗 Supabase Realtime接続を開始します');
-                
+
                 // Answerテーブルの変更を監視
                 channel = supabase
                     .channel('statistics-updates')
@@ -116,9 +116,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     // 回答データの変更を処理する関数（リアルタイム即座更新）
     const handleAnswerChange = useCallback(async (payload: any) => {
         console.log('� 回答データの変更を即座に処理中:', payload);
-        
+
         const { eventType, new: newRecord, old: oldRecord } = payload;
-        
+
         if (eventType === 'INSERT' && newRecord) {
             console.log('➕ 新しい回答が追加されました:', newRecord);
             // 即座にローカル統計を更新
@@ -135,10 +135,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     // 統計を即座に更新する関数
     const updateStatisticsInstantly = useCallback(async (sectionUUID: string, eventType: string, record: any) => {
         console.log(`⚡ セクション ${sectionUUID} の統計を即座に更新中...`);
-        
+
         try {
             const supabase = createClient();
-            
+
             // 最新の回答データを取得（効率的にセクション単位で取得）
             const { data: responses, error } = await supabase
                 .from('Answer')
@@ -168,7 +168,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                     if (qs.section.SectionUUID === sectionUUID) {
                         const newStatistics = calculateQuestionStatistics(qs.section, uniqueResponses);
                         console.log(`🎯 統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
-                        
+
                         return {
                             ...qs,
                             responseCount: uniqueResponses.length,
@@ -863,16 +863,16 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                         '50%': { transform: 'scale(1.1)' },
                                         '100%': { transform: 'scale(1)' }
                                     },
-                                    animation: sectionLastUpdated[sectionId] && 
-                                              (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                              'bounce 0.6s ease-in-out' : 'none',
+                                    animation: sectionLastUpdated[sectionId] &&
+                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                        'bounce 0.6s ease-in-out' : 'none',
                                     // 新しい回答時の背景色変化
-                                    backgroundColor: sectionLastUpdated[sectionId] && 
-                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                    'primary.light' : 'transparent',
-                                    color: sectionLastUpdated[sectionId] && 
-                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                          'primary.contrastText' : 'primary.main'
+                                    backgroundColor: sectionLastUpdated[sectionId] &&
+                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                        'primary.light' : 'transparent',
+                                    color: sectionLastUpdated[sectionId] &&
+                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                        'primary.contrastText' : 'primary.main'
                                 }}
                             />
                             {sectionLastUpdated[sectionId] && (
@@ -928,9 +928,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                             '70%': { boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)' },
                                             '100%': { boxShadow: '0 0 0 0 rgba(25, 118, 210, 0)' }
                                         },
-                                        animation: sectionLastUpdated[sectionId] && 
-                                                  (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                  'pulse 1s ease-out' : 'none'
+                                        animation: sectionLastUpdated[sectionId] &&
+                                        (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                            'pulse 1s ease-out' : 'none'
                                     }}
                                 >
                                     <PieChart
@@ -950,10 +950,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                             {statistics.type === 'star' && (
                                 <Box sx={{position: 'relative'}}>
                                     {currentStarViewMode === 'average' ? (
-                                        <Box 
+                                        <Box
                                             key={`star-avg-${sectionId}-${responseCount}`} // リアルタイム更新のキー
                                             sx={{
-                                                textAlign: 'center', 
+                                                textAlign: 'center',
                                                 py: 2,
                                                 transition: 'all 0.5s ease-in-out',
                                                 // リアルタイム更新時の星の輝き効果
@@ -962,23 +962,23 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                                     '50%': { transform: 'scale(1.05)', filter: 'brightness(1.2)' },
                                                     '100%': { transform: 'scale(1)', filter: 'brightness(1)' }
                                                 },
-                                                animation: sectionLastUpdated[sectionId] && 
-                                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                          'starGlow 1.2s ease-in-out' : 'none'
+                                                animation: sectionLastUpdated[sectionId] &&
+                                                (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                    'starGlow 1.2s ease-in-out' : 'none'
                                             }}
                                         >
                                             <Box sx={{display: 'flex', justifyContent: 'center', mb: 2}}>
                                                 {renderStarRating(statistics.average, statistics.maxStars)}
                                             </Box>
-                                            <Typography 
-                                                variant="h4" 
-                                                color="primary.main" 
+                                            <Typography
+                                                variant="h4"
+                                                color="primary.main"
                                                 sx={{
                                                     mb: 1,
                                                     transition: 'all 0.3s ease',
-                                                    fontWeight: sectionLastUpdated[sectionId] && 
-                                                               (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                               'bold' : 'normal'
+                                                    fontWeight: sectionLastUpdated[sectionId] &&
+                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                        'bold' : 'normal'
                                                 }}
                                             >
                                                 {statistics.average}
@@ -1000,9 +1000,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                                     '50%': { filter: 'brightness(1.1)' },
                                                     '100%': { filter: 'brightness(1)' }
                                                 },
-                                                animation: sectionLastUpdated[sectionId] && 
-                                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                          'glow 1.5s ease-in-out' : 'none'
+                                                animation: sectionLastUpdated[sectionId] &&
+                                                (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                    'glow 1.5s ease-in-out' : 'none'
                                             }}
                                         >
                                             <BarChart
@@ -1241,14 +1241,14 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                         '50%': { backgroundColor: 'primary.light' },
                         '100%': { backgroundColor: 'background.paper' }
                     },
-                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                               'highlight 2s ease-in-out' : 'none'
+                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                        'highlight 2s ease-in-out' : 'none'
                 }}>
                     <CardContent sx={{textAlign: 'center'}}>
                         <PeopleIcon sx={{fontSize: 40, color: '#1976d2', mb: 1}}/>
-                        <Typography 
+                        <Typography
                             key={`total-responses-${statistics.totalResponses}`} // リアルタイム更新のキー
-                            variant="h4" 
+                            variant="h4"
                             color="primary.main"
                             sx={{
                                 transition: 'all 0.4s ease-in-out',
@@ -1257,8 +1257,8 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                     '50%': { transform: 'scale(1.15)' },
                                     '100%': { transform: 'scale(1)' }
                                 },
-                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                                          'countUp 0.8s ease-in-out' : 'none'
+                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                                    'countUp 0.8s ease-in-out' : 'none'
                             }}
                         >
                             {statistics.totalResponses}
@@ -1284,19 +1284,19 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 <Card sx={{
                     transition: 'all 0.3s ease',
                     // 回答率更新時の効果
-                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                               'highlight 2s ease-in-out' : 'none'
+                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                        'highlight 2s ease-in-out' : 'none'
                 }}>
                     <CardContent sx={{textAlign: 'center'}}>
                         <BarChartIcon sx={{fontSize: 40, color: '#4caf50', mb: 1}}/>
-                        <Typography 
+                        <Typography
                             key={`response-rate-${statistics.responseRate.toFixed(1)}`} // リアルタイム更新のキー
-                            variant="h4" 
+                            variant="h4"
                             color="primary.main"
                             sx={{
                                 transition: 'all 0.4s ease-in-out',
-                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                                          'countUp 0.8s ease-in-out' : 'none'
+                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                                    'countUp 0.8s ease-in-out' : 'none'
                             }}
                         >
                             {statistics.responseRate.toFixed(1)}
