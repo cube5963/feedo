@@ -42,23 +42,80 @@ export default function Project() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // 日付を安全にフォーマットする関数
-  const formatSafeDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return '不明';
+  const formatSafeDate = (dateString: string | null | undefined, fieldName?: string): string => {
+    if (!dateString) {
+      console.log(`${fieldName || 'Date'}フィールドが空またはnull:`, dateString);
+      return '不明';
+    }
     
     try {
-      const date = new Date(dateString);
+      // Unix timestamp（秒）の場合は*1000してミリ秒に変換
+      let date: Date;
+      
+      // 数値の場合（Unix timestamp）
+      if (typeof dateString === 'number' || /^\d+$/.test(String(dateString))) {
+        const timestamp = Number(dateString);
+        // 秒単位のUnix timestampの場合（桁数が少ない）
+        if (timestamp < 10000000000) {
+          date = new Date(timestamp * 1000);
+          console.log(`${fieldName || 'Date'} Unix秒timestamp検出:`, timestamp, '→', date);
+        } else {
+          date = new Date(timestamp);
+          console.log(`${fieldName || 'Date'} Unixミリ秒timestamp検出:`, timestamp, '→', date);
+        }
+      } else {
+        date = new Date(dateString);
+        console.log(`${fieldName || 'Date'} 文字列日付:`, dateString, '→', date);
+      }
       
       // 無効な日付や1970年代（Unix timestamp 0近辺）をチェック
       if (isNaN(date.getTime()) || date.getFullYear() < 1990) {
-        console.warn('無効な日付:', dateString);
+        console.warn(`${fieldName || 'Date'} 無効な日付:`, dateString, '→', date);
         return '不明';
       }
       
       return date.toLocaleDateString('ja-JP');
     } catch (error) {
-      console.error('日付フォーマットエラー:', error, dateString);
+      console.error(`${fieldName || 'Date'} フォーマットエラー:`, error, dateString);
       return '不明';
     }
+  };
+
+  // AIフォームの日付を修正する関数
+  const fixAIFormDates = async (formsToFix: any[]) => {
+    if (!user || formsToFix.length === 0) return;
+    
+    const supabase = createPersonalClient();
+    const now = new Date().toISOString();
+    
+    console.log('AIフォームの日付修正を開始...');
+    
+    for (const form of formsToFix) {
+      try {
+        const { error: updateError } = await supabase
+          .from('Form')
+          .update({
+            CreatedAt: form.CreatedAt && new Date(form.CreatedAt).getFullYear() >= 1990 
+                ? form.CreatedAt 
+                : now,
+            UpdatedAt: now  // 最終更新日は現在時刻に設定
+          })
+          .eq('FormUUID', form.FormUUID)
+          .eq('UserID', user.id); // セキュリティのため所有者チェック
+        
+        if (updateError) {
+          console.error(`フォーム ${form.FormName} の日付更新エラー:`, updateError);
+        } else {
+          console.log(`フォーム ${form.FormName} の日付を修正しました`);
+        }
+      } catch (error) {
+        console.error(`フォーム ${form.FormName} の修正中にエラー:`, error);
+      }
+    }
+    
+    // 修正後にフォーム一覧を再取得
+    console.log('日付修正完了。フォーム一覧を再読み込み中...');
+    window.location.reload();
   };
 
   // ログインユーザーの認証状態確認とフォーム取得
@@ -112,14 +169,41 @@ export default function Project() {
           // 日付の問題をデバッグするためのログ出力
           if (data && data.length > 0) {
             console.log('フォームの日付情報をチェック:');
+            const formsNeedingDateFix: any[] = [];
+            
             data.forEach(form => {
-              console.log(`フォーム ${form.FormName}:`, {
+              const isAICreated = form.FormName?.includes('AI') || form.ImgID === '' || !form.ImgID;
+              console.log(`フォーム ${form.FormName} ${isAICreated ? '(AI作成可能性)' : '(通常作成)'}:`, {
+                FormUUID: form.FormUUID,
                 CreatedAt: form.CreatedAt,
+                CreatedAtType: typeof form.CreatedAt,
                 CreatedAtParsed: form.CreatedAt ? new Date(form.CreatedAt) : 'null',
                 UpdatedAt: form.UpdatedAt,
-                UpdatedAtParsed: form.UpdatedAt ? new Date(form.UpdatedAt) : 'null'
+                UpdatedAtType: typeof form.UpdatedAt,
+                UpdatedAtParsed: form.UpdatedAt ? new Date(form.UpdatedAt) : 'null',
+                UserID: form.UserID
               });
+              
+              // 日付が問題のあるフォームを収集
+              const hasDateIssue = !form.CreatedAt || 
+                                  !form.UpdatedAt || 
+                                  new Date(form.CreatedAt).getFullYear() < 1990 ||
+                                  new Date(form.UpdatedAt).getFullYear() < 1990;
+              
+              if (hasDateIssue && isAICreated) {
+                formsNeedingDateFix.push(form);
+              }
             });
+            
+            // 問題のあるAIフォームがある場合、自動修正を提案
+            if (formsNeedingDateFix.length > 0) {
+              console.log(`${formsNeedingDateFix.length}個のAIフォームで日付の問題を検出しました:`, 
+                         formsNeedingDateFix.map(f => f.FormName));
+              
+              // 自動修正を実行（必要に応じてコメントアウト解除）
+              console.log('AIフォームの日付を自動修正します...');
+              fixAIFormDates(formsNeedingDateFix);
+            }
           }
           
           // 念のため、JavaScriptレベルでもUserIDが存在するもののみフィルタリング
@@ -380,10 +464,10 @@ export default function Project() {
                           <CardContent sx={{ flex: 1 }}>
                             <Typography variant="subtitle1">{form.FormName}</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              作成日 {formatSafeDate(form.CreatedAt)}
+                              作成日 {formatSafeDate(form.CreatedAt, 'CreatedAt')}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              最終更新日 {formatSafeDate(form.UpdatedAt)}
+                              最終更新日 {formatSafeDate(form.UpdatedAt, 'UpdatedAt')}
                             </Typography>
                           </CardContent>
                           <Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
