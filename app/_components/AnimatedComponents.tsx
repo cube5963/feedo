@@ -779,107 +779,294 @@ export const ParticleExplosion: React.FC<ParticleExplosionProps> = ({
   );
 };
 
-// === モダンで洗練されたアニメーション効果 ===
+// ===== 回転ずし風アニメーション =====
 
-// テキストモーフィングエフェクト
-export const MorphingText: React.FC<{
-  texts: string[];
-  interval?: number;
+interface SushiBeltProps {
+  cards: Array<{
+    id: string | number;
+    content: React.ReactNode;
+  }>;
+  speed?: number;
+  direction?: 'left' | 'right';
+  cardWidth?: number;
+  className?: string;
   sx?: any;
-}> = ({ texts, interval = 3000, sx }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const textRef = useRef<HTMLDivElement>(null);
+}
+
+// 回転ずし風カードコンベアーベルト
+export const SushiBelt: React.FC<SushiBeltProps> = ({
+  cards,
+  speed = 60, // 1周あたりの秒数
+  direction = 'left',
+  cardWidth = 280,
+  className = '',
+  sx = {}
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % texts.length);
-    }, interval);
+    if (!containerRef.current) return;
 
-    return () => clearInterval(timer);
-  }, [texts.length, interval]);
+    const container = containerRef.current;
+    const containerWidth = container.offsetWidth;
+    const totalWidth = cards.length * (cardWidth + 20); // カード間のマージン込み
+    const animationDistance = containerWidth + totalWidth;
 
-  useEffect(() => {
-    if (!textRef.current) return;
+    tlRef.current = gsap.timeline({ repeat: -1, ease: "none" });
 
-    gsap.fromTo(textRef.current,
-      { opacity: 0, y: 20, rotateX: -90 },
-      { 
-        opacity: 1, 
-        y: 0, 
-        rotateX: 0,
-        duration: 0.6,
-        ease: "back.out(1.7)"
+    cardRefs.current.forEach((cardEl, index) => {
+      if (!cardEl) return;
+
+      // 初期位置設定（画面右端から開始）
+      const initialX = containerWidth + (cardWidth + 20) * index;
+      gsap.set(cardEl, { x: initialX });
+
+      // 左へ移動するアニメーション
+      tlRef.current!.to(cardEl, {
+        x: direction === 'left' ? -totalWidth : containerWidth + totalWidth,
+        duration: speed,
+        ease: "none"
+      }, 0);
+
+      // カードの回転とスケール効果
+      tlRef.current!.to(cardEl, {
+        rotationY: 360,
+        scale: 1.05,
+        duration: speed / 4,
+        repeat: -1,
+        yoyo: true,
+        ease: "power2.inOut"
+      }, 0);
+
+      // ホバー時の激しい効果
+      const handleMouseEnter = () => {
+        gsap.to(cardEl, {
+          scale: 1.15,
+          rotationX: 20,
+          z: 50,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          duration: 0.3,
+          ease: "back.out(1.7)"
+        });
+      };
+
+      const handleMouseLeave = () => {
+        gsap.to(cardEl, {
+          scale: 1.05,
+          rotationX: 0,
+          z: 0,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      };
+
+      cardEl.addEventListener('mouseenter', handleMouseEnter);
+      cardEl.addEventListener('mouseleave', handleMouseLeave);
+    });
+
+    return () => {
+      if (tlRef.current) {
+        tlRef.current.kill();
       }
-    );
-  }, [currentIndex]);
+      cardRefs.current.forEach(cardEl => {
+        if (cardEl) {
+          gsap.killTweensOf(cardEl);
+        }
+      });
+    };
+  }, [cards, speed, direction, cardWidth]);
 
   return (
-    <Box ref={textRef} sx={sx}>
-      {texts[currentIndex]}
+    <Box
+      ref={containerRef}
+      className={`sushi-belt ${className}`}
+      sx={{
+        width: '100%',
+        height: '200px',
+        overflow: 'hidden',
+        position: 'relative',
+        perspective: '1000px',
+        background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.05) 80%, rgba(255,255,255,0) 100%)',
+        ...sx
+      }}
+    >
+      {cards.map((card, index) => (
+        <Box
+          key={card.id}
+          ref={(el: HTMLDivElement | null) => {
+            cardRefs.current[index] = el;
+          }}
+          sx={{
+            position: 'absolute',
+            width: `${cardWidth}px`,
+            height: '160px',
+            top: '20px',
+            cursor: 'pointer',
+            transformStyle: 'preserve-3d',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {card.content}
+        </Box>
+      ))}
     </Box>
   );
 };
 
-// 3D変形カードエフェクト
-export const Transform3DCard: React.FC<{
-  children: React.ReactNode;
-  intensity?: number;
+// マトリックス風テキストエフェクト
+interface MatrixTextProps {
+  text: string;
+  speed?: number;
+  className?: string;
   sx?: any;
-}> = ({ children, intensity = 0.15, sx }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
+}
+
+export const MatrixText: React.FC<MatrixTextProps> = ({
+  text,
+  speed = 100,
+  className = '',
+  sx = {}
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [displayText, setDisplayText] = useState('');
 
   useEffect(() => {
-    if (!cardRef.current) return;
+    if (!containerRef.current) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const card = cardRef.current;
-      if (!card) return;
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZあいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+    let iteration = 0;
 
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      
-      const rotateX = (y - centerY) / centerY * intensity * 20;
-      const rotateY = (x - centerX) / centerX * intensity * 20;
+    const interval = setInterval(() => {
+      setDisplayText(prevText => 
+        text.split('').map((letter, index) => {
+          if (index < iteration) {
+            return text[index];
+          }
+          return chars[Math.floor(Math.random() * chars.length)];
+        }).join('')
+      );
 
-      gsap.to(card, {
-        rotateX: -rotateX,
-        rotateY: rotateY,
-        transformPerspective: 1000,
-        duration: 0.3,
-        ease: "power2.out"
-      });
-    };
-
-    const handleMouseLeave = () => {
-      gsap.to(cardRef.current, {
-        rotateX: 0,
-        rotateY: 0,
-        duration: 0.5,
-        ease: "power2.out"
-      });
-    };
-
-    cardRef.current.addEventListener('mousemove', handleMouseMove);
-    cardRef.current.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      if (cardRef.current) {
-        cardRef.current.removeEventListener('mousemove', handleMouseMove);
-        cardRef.current.removeEventListener('mouseleave', handleMouseLeave);
+      if (iteration >= text.length) {
+        clearInterval(interval);
       }
-    };
-  }, [intensity]);
+      
+      iteration += 1 / 3;
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed]);
 
   return (
     <Box
-      ref={cardRef}
+      ref={containerRef}
+      className={`matrix-text ${className}`}
       sx={{
-        transformStyle: 'preserve-3d',
-        transition: 'transform 0.3s ease',
+        fontFamily: 'monospace',
+        fontSize: '1.2rem',
+        fontWeight: 'bold',
+        color: '#00ff00',
+        textShadow: '0 0 10px #00ff00',
+        ...sx
+      }}
+    >
+      {displayText}
+    </Box>
+  );
+};
+
+// スパーク効果
+interface SparkleEffectProps {
+  children: React.ReactNode;
+  sparkleCount?: number;
+  colors?: string[];
+  className?: string;
+  sx?: any;
+}
+
+export const SparkleEffect: React.FC<SparkleEffectProps> = ({
+  children,
+  sparkleCount = 15,
+  colors = ['#ffd700', '#ffed4e', '#fff9c4'],
+  className = '',
+  sx = {}
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sparklesRef = useRef<HTMLDivElement[]>([]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    
+    // スパークルを作成
+    const sparkles = Array.from({ length: sparkleCount }, (_, i) => {
+      const sparkle = document.createElement('div');
+      sparkle.innerHTML = '✨';
+      sparkle.style.position = 'absolute';
+      sparkle.style.pointerEvents = 'none';
+      sparkle.style.fontSize = '12px';
+      sparkle.style.color = colors[i % colors.length];
+      sparkle.style.zIndex = '10';
+      container.appendChild(sparkle);
+      return sparkle;
+    });
+    
+    sparklesRef.current = sparkles;
+
+    const animate = () => {
+      sparkles.forEach(sparkle => {
+        const x = Math.random() * container.offsetWidth;
+        const y = Math.random() * container.offsetHeight;
+        
+        gsap.set(sparkle, { x, y, scale: 0, opacity: 0 });
+        
+        gsap.to(sparkle, {
+          scale: 1,
+          opacity: 1,
+          duration: 0.6,
+          ease: "back.out(1.7)"
+        });
+        
+        gsap.to(sparkle, {
+          scale: 0,
+          opacity: 0,
+          duration: 0.6,
+          delay: 0.8,
+          ease: "power2.in"
+        });
+        
+        gsap.to(sparkle, {
+          y: y - 30,
+          duration: 1.4,
+          ease: "power2.out"
+        });
+      });
+    };
+
+    // 定期的にスパークル
+    const interval = setInterval(animate, 2000);
+    animate(); // 初回実行
+
+    return () => {
+      clearInterval(interval);
+      sparkles.forEach(s => s.remove());
+      gsap.killTweensOf(sparkles);
+    };
+  }, [sparkleCount, colors]);
+
+  return (
+    <Box
+      ref={containerRef}
+      className={`sparkle-effect ${className}`}
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
         ...sx
       }}
     >
@@ -888,291 +1075,53 @@ export const Transform3DCard: React.FC<{
   );
 };
 
-// マグネティック効果
-export const MagneticElement: React.FC<{
+// 激しいネオングロー効果
+interface NeonGlowProps {
   children: React.ReactNode;
-  strength?: number;
+  glowColor?: string;
+  pulseSpeed?: number;
+  intensity?: number;
+  className?: string;
   sx?: any;
-}> = ({ children, strength = 0.3, sx }) => {
+}
+
+export const NeonGlow: React.FC<NeonGlowProps> = ({
+  children,
+  glowColor = '#00ffff',
+  pulseSpeed = 2,
+  intensity = 30,
+  className = '',
+  sx = {}
+}) => {
   const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!elementRef.current) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const element = elementRef.current;
-      if (!element) return;
-
-      const rect = element.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      const deltaX = (e.clientX - centerX) * strength;
-      const deltaY = (e.clientY - centerY) * strength;
-
-      gsap.to(element, {
-        x: deltaX,
-        y: deltaY,
-        duration: 0.3,
-        ease: "power2.out"
-      });
-    };
-
-    const handleMouseLeave = () => {
-      gsap.to(elementRef.current, {
-        x: 0,
-        y: 0,
-        duration: 0.5,
-        ease: "back.out(1.7)"
-      });
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    elementRef.current.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      if (elementRef.current) {
-        elementRef.current.removeEventListener('mouseleave', handleMouseLeave);
-      }
-    };
-  }, [strength]);
-
-  return (
-    <Box ref={elementRef} sx={sx}>
-      {children}
-    </Box>
-  );
-};
-
-// パララックス背景エフェクト
-export const ParallaxBackground: React.FC<{
-  children: React.ReactNode;
-  speed?: number;
-  sx?: any;
-}> = ({ children, speed = 0.5, sx }) => {
-  const bgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!bgRef.current) return;
-
-    const handleScroll = () => {
-      const scrolled = window.pageYOffset;
-      if (bgRef.current) {
-        gsap.to(bgRef.current, {
-          y: scrolled * speed,
-          duration: 0.3,
-          ease: "none"
-        });
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [speed]);
-
-  return (
-    <Box ref={bgRef} sx={sx}>
-      {children}
-    </Box>
-  );
-};
-
-// 連鎖的なアニメーション効果
-export const StaggerContainer: React.FC<{
-  children: React.ReactNode;
-  stagger?: number;
-  delay?: number;
-}> = ({ children, stagger = 0.1, delay = 0 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const childElements = containerRef.current.children;
-    
-    gsap.fromTo(childElements,
-      { 
-        opacity: 0,
-        y: 50,
-        scale: 0.8
-      },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.8,
-        stagger: stagger,
-        delay: delay,
-        ease: "back.out(1.7)"
-      }
-    );
-  }, [stagger, delay]);
-
-  return (
-    <Box ref={containerRef}>
-      {children}
-    </Box>
-  );
-};
-
-// スムーズなカウントアップエフェクト
-export const CountUpNumber: React.FC<{
-  end: number;
-  start?: number;
-  duration?: number;
-  suffix?: string;
-  sx?: any;
-}> = ({ end, start = 0, duration = 2, suffix = '', sx }) => {
-  const [count, setCount] = useState(start);
-  const numberRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const counter = { value: start };
-    
-    gsap.to(counter, {
-      value: end,
-      duration: duration,
-      ease: "power2.out",
-      onUpdate: () => {
-        setCount(Math.round(counter.value));
-      }
+    gsap.to(elementRef.current, {
+      boxShadow: `0 0 ${intensity}px ${glowColor}, 0 0 ${intensity * 2}px ${glowColor}, 0 0 ${intensity * 3}px ${glowColor}`,
+      duration: pulseSpeed,
+      ease: "power2.inOut",
+      repeat: -1,
+      yoyo: true
     });
-  }, [end, start, duration]);
-
-  return (
-    <Box ref={numberRef} sx={sx}>
-      {count.toLocaleString()}{suffix}
-    </Box>
-  );
-};
-
-// 滑らかなライン描画エフェクト
-export const DrawingLine: React.FC<{
-  width?: string | number;
-  height?: number;
-  color?: string;
-  duration?: number;
-  delay?: number;
-}> = ({ width = '100%', height = 2, color = '#000', duration = 1.5, delay = 0 }) => {
-  const lineRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!lineRef.current) return;
-
-    gsap.fromTo(lineRef.current,
-      { scaleX: 0 },
-      {
-        scaleX: 1,
-        duration: duration,
-        delay: delay,
-        ease: "power2.inOut",
-        transformOrigin: "left center"
-      }
-    );
-  }, [duration, delay]);
-
-  return (
-    <Box
-      ref={lineRef}
-      sx={{
-        width: width,
-        height: height,
-        backgroundColor: color,
-        transformOrigin: 'left center'
-      }}
-    />
-  );
-};
-
-// 高度なホバーエフェクトカード
-export const AdvancedHoverCard: React.FC<{
-  children: React.ReactNode;
-  hoverContent?: React.ReactNode;
-  sx?: any;
-}> = ({ children, hoverContent, sx }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!cardRef.current || !overlayRef.current) return;
-
-    const card = cardRef.current;
-    const overlay = overlayRef.current;
-
-    const handleMouseEnter = () => {
-      gsap.to(card, {
-        scale: 1.03,
-        y: -8,
-        duration: 0.4,
-        ease: "power2.out"
-      });
-
-      gsap.to(overlay, {
-        opacity: 1,
-        y: 0,
-        duration: 0.3,
-        ease: "power2.out"
-      });
-    };
-
-    const handleMouseLeave = () => {
-      gsap.to(card, {
-        scale: 1,
-        y: 0,
-        duration: 0.4,
-        ease: "power2.out"
-      });
-
-      gsap.to(overlay, {
-        opacity: 0,
-        y: 20,
-        duration: 0.3,
-        ease: "power2.out"
-      });
-    };
-
-    card.addEventListener('mouseenter', handleMouseEnter);
-    card.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
-      card.removeEventListener('mouseenter', handleMouseEnter);
-      card.removeEventListener('mouseleave', handleMouseLeave);
+      gsap.killTweensOf(elementRef.current);
     };
-  }, []);
+  }, [glowColor, pulseSpeed, intensity]);
 
   return (
     <Box
-      ref={cardRef}
+      ref={elementRef}
+      className={`neon-glow ${className}`}
       sx={{
-        position: 'relative',
-        transition: 'all 0.3s ease',
+        border: `2px solid ${glowColor}`,
+        borderRadius: '8px',
         ...sx
       }}
     >
       {children}
-      {hoverContent && (
-        <Box
-          ref={overlayRef}
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            borderRadius: 'inherit',
-            transform: 'translateY(20px)'
-          }}
-        >
-          {hoverContent}
-        </Box>
-      )}
     </Box>
   );
 };

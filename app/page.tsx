@@ -41,7 +41,16 @@ import {
   AnimatedButton, 
   FloatingElement, 
   PulsingElement, 
-  GlowEffect 
+  GlowEffect,
+  SushiBelt,
+  ExplodeEffect,
+  Flip3DCard,
+  IntenseBounce,
+  RainbowGlow,
+  ParticleExplosion,
+  MatrixText,
+  SparkleEffect,
+  NeonGlow
 } from './_components/AnimatedComponents';
 import WebNavi from './_components/webnavi';
 
@@ -241,12 +250,44 @@ export default function Home() {
     {
       name: '田中 太郎',
       company: 'スタートアップ CEO',
-      comment: 'フォーム作成が劇的に効率化されました。AIの精度に驚いています。'
+      comment: 'フォーム作成が劇的に効率化されました。AIの精度に驚いています。',
+      avatar: '👨‍💼',
+      rating: 5
     },
     {
       name: '佐藤 花子',
       company: 'マーケティング部長',
-      comment: 'データ分析機能が素晴らしく、意思決定が格段に速くなりました。'
+      comment: 'データ分析機能が素晴らしく、意思決定が格段に速くなりました。',
+      avatar: '👩‍💼',
+      rating: 5
+    },
+    {
+      name: '山田 次郎',
+      company: 'IT企業 CTO',
+      comment: 'セキュリティ面でも安心して使えるエンタープライズ級のサービスです。',
+      avatar: '👨‍💻',
+      rating: 5
+    },
+    {
+      name: '鈴木 美咲',
+      company: 'コンサルタント',
+      comment: 'クライアント向けのアンケートが簡単に作れて重宝しています。',
+      avatar: '👩‍🏫',
+      rating: 5
+    },
+    {
+      name: '高橋 勇',
+      company: '中小企業 社長',
+      comment: 'コストパフォーマンスが最高！小さな会社でも使いやすいです。',
+      avatar: '🧑‍💼',
+      rating: 5
+    },
+    {
+      name: '伊藤 明子',
+      company: 'NPO代表',
+      comment: 'ボランティア向けのフォームも簡単に作成できて助かっています。',
+      avatar: '👩‍🔬',
+      rating: 5
     }
   ];
 
