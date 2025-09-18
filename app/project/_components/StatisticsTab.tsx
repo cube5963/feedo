@@ -710,12 +710,34 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
 
     const calculateTextStatistics = (answers: string[]) => {
         //const validAnswers = answers.filter(answer => typeof answer === 'string' && answer.trim() !== '');
+        /*
         const validAnswers = answers.filter(answer => answer.trim() !== '');
         return {
             type: 'text',
             total: validAnswers.length,
             responses: validAnswers
         };
+        */
+
+        const validAnswers = answers
+            .map(answer => {
+                if(typeof answer === 'object' && answer !== null && answer.text) {
+                    return String(answer.text);
+                }
+
+                if(typeof answer === 'string')
+                    return answer
+
+                return null;
+            })
+            .filter(text => text !== null && text.trim() !== '')
+            .map(text => text!.trim());
+
+        return {
+            type: 'text',
+            total: validAnswers.length,
+            responses: validAnswers
+        }
     };
 
     const calculateTwoChoiceStatistics = (answers: any[]) => {
@@ -1091,7 +1113,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                                 wordBreak: 'break-word'
                                             }}
                                         >
-                                            "{response}"
+                                            {response}
                                         </Typography>
                                     ))}
                                 </Box>
@@ -1104,13 +1126,83 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#f8f9fa',
+                            backgroundColor: statistics.type === 'text' ? 'transparent' : '#f8f9fa',
                             borderRadius: 1,
-                            border: '1px dashed #ddd'
+                            border: statistics.type === 'text' ? 'none' : '1px dashed #ddd'
                         }}>
-                            <Typography variant="body2" color="text.secondary">
-                                将来の機能用スペース
-                            </Typography>
+                            {statistics.type === 'text' ? (
+                                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                                        感情分析
+                                    </Typography>
+                                    {(() => {
+                                        // predictの値を集計
+                                        const predictCounts = { 0: 0, 1: 0, 2: 0 };
+                                        statistics.responses.forEach((response: string, index: number) => {
+                                            // 対応する回答データからpredictを取得
+                                            const answerData = questionStat.responses[index];
+                                            if (answerData && answerData.Answer) {
+                                                try {
+                                                    const parsed = JSON.parse(answerData.Answer);
+                                                    if (typeof parsed.predict === 'number' && (parsed.predict === 0 || parsed.predict === 1 || parsed.predict === 2)) {
+                                                        predictCounts[parsed.predict]++;
+                                                    }
+                                                } catch (error) {
+                                                    console.warn('予測データ解析エラー:', error);
+                                                }
+                                            }
+                                        });
+
+                                        const predictData = [
+                                            { id: 0, value: predictCounts[0], label: 'ネガティブ' },
+                                            { id: 1, value: predictCounts[1], label: 'ニュートラル' },
+                                            { id: 2, value: predictCounts[2], label: 'ポジティブ' }
+                                        ].sort((a, b) => b.value - a.value);;
+
+                                        const totalPredicts = predictCounts[0] + predictCounts[1];
+
+                                        return totalPredicts > 0 ? (
+                                            <Box
+                                                key={`predict-${sectionId}-${totalPredicts}`}
+                                                sx={{
+                                                    transition: 'all 0.5s ease-in-out',
+                                                    '@keyframes predictPulse': {
+                                                        '0%': { boxShadow: '0 0 0 0 rgba(156, 39, 176, 0.4)' },
+                                                        '70%': { boxShadow: '0 0 0 10px rgba(156, 39, 176, 0)' },
+                                                        '100%': { boxShadow: '0 0 0 0 rgba(156, 39, 176, 0)' }
+                                                    },
+                                                    animation: sectionLastUpdated[sectionId] &&
+                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                        'predictPulse 1s ease-out' : 'none'
+                                                }}
+                                            >
+                                                <PieChart
+                                                    series={[
+                                                        {
+                                                            data: predictData,
+                                                            highlightScope: { fade: 'global', highlight: 'item' },
+                                                            faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                                                        },
+                                                    ]}
+                                                    height={180}
+                                                    colors={['#ff5722', '#ffc107', '#4caf50']} // 0: オレンジ, 1: グリーン
+                                                />
+                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                                    総予測数: {totalPredicts}件
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">
+                                                予測データがありません
+                                            </Typography>
+                                        );
+                                    })()}
+                                </Box>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                    将来の機能用スペース
+                                </Typography>
+                            )}
                         </Box>
                     </Box>
                 </CardContent>
