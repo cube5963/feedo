@@ -41,6 +41,26 @@ export default function Project() {
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // 日付を安全にフォーマットする関数
+  const formatSafeDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '不明';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // 無効な日付や1970年代（Unix timestamp 0近辺）をチェック
+      if (isNaN(date.getTime()) || date.getFullYear() < 1990) {
+        console.warn('無効な日付:', dateString);
+        return '不明';
+      }
+      
+      return date.toLocaleDateString('ja-JP');
+    } catch (error) {
+      console.error('日付フォーマットエラー:', error, dateString);
+      return '不明';
+    }
+  };
+
   // ログインユーザーの認証状態確認とフォーム取得
   useEffect(() => {
     const checkUserAndFetchForms = async () => {
@@ -88,6 +108,19 @@ export default function Project() {
           }
         } else {
           console.log(`ユーザー ${currentUser.email} のフォーム:`, data?.length || 0, '件');
+          
+          // 日付の問題をデバッグするためのログ出力
+          if (data && data.length > 0) {
+            console.log('フォームの日付情報をチェック:');
+            data.forEach(form => {
+              console.log(`フォーム ${form.FormName}:`, {
+                CreatedAt: form.CreatedAt,
+                CreatedAtParsed: form.CreatedAt ? new Date(form.CreatedAt) : 'null',
+                UpdatedAt: form.UpdatedAt,
+                UpdatedAtParsed: form.UpdatedAt ? new Date(form.UpdatedAt) : 'null'
+              });
+            });
+          }
           
           // 念のため、JavaScriptレベルでもUserIDが存在するもののみフィルタリング
           const validForms = (data || []).filter((form: FormData) => form.UserID === currentUser.id);
@@ -137,15 +170,18 @@ export default function Project() {
     try {
       const supabase = createPersonalClient(); // 個人用クライアント使用
       
-      // 新しいフォームを作成（UserIDを設定）
+      // 新しいフォームを作成（UserIDと日時を設定）
+      const currentTime = new Date().toISOString(); // ISO 8601形式の現在日時
       const formData = {
         FormName: 'New Form', // デフォルトのフォーム名
         ImgID: '',
         Delete: false,
-        UserID: user.id // ログインユーザーのIDを設定
+        UserID: user.id, // ログインユーザーのIDを設定
+        CreatedAt: currentTime, // 作成日時を明示的に設定
+        UpdatedAt: currentTime  // 最終更新日時を作成日時と同じに設定
       };
 
-      console.log('作成するフォームデータ:', { ...formData, UserID: `${user.id} (${user.email})` });      const { data: newForm, error: createError } = await supabase
+      console.log('作成するフォームデータ:', { ...formData, UserID: `${user.id} (${user.email})`, CreatedAt: currentTime });      const { data: newForm, error: createError } = await supabase
         .from('Form')
         .insert([formData])
         .select()
@@ -344,10 +380,10 @@ export default function Project() {
                           <CardContent sx={{ flex: 1 }}>
                             <Typography variant="subtitle1">{form.FormName}</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              作成日 {new Date(form.CreatedAt).toLocaleDateString('ja-JP')}
+                              作成日 {formatSafeDate(form.CreatedAt)}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              最終更新日 {new Date(form.UpdatedAt).toLocaleDateString('ja-JP')}
+                              最終更新日 {formatSafeDate(form.UpdatedAt)}
                             </Typography>
                           </CardContent>
                           <Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
