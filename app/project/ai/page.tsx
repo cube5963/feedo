@@ -96,7 +96,59 @@ export default function AI(){
             }
 
             const data = await response.json();
-            console.log("結果:", data.result);
+            console.log("AI APIレスポンス詳細:", data);
+            console.log("AIで作成されたフォームID:", data.form_id);
+            
+            // フォーム作成後、実際のデータベース状態を確認
+            if (data.form_id) {
+                const supabase = createPersonalClient();
+                const { data: createdForm, error: checkError } = await supabase
+                    .from('Form')
+                    .select('*')
+                    .eq('FormUUID', data.form_id)
+                    .single();
+                
+                if (createdForm) {
+                    console.log("AIで作成されたフォームのDB状態:", {
+                        FormUUID: createdForm.FormUUID,
+                        FormName: createdForm.FormName,
+                        CreatedAt: createdForm.CreatedAt,
+                        CreatedAtType: typeof createdForm.CreatedAt,
+                        UpdatedAt: createdForm.UpdatedAt,
+                        UpdatedAtType: typeof createdForm.UpdatedAt,
+                        UserID: createdForm.UserID
+                    });
+                    
+                    // 作成日または最終更新日が適切でない場合、現在時刻で更新
+                    const now = new Date().toISOString();
+                    const needsUpdate = !createdForm.CreatedAt || 
+                                      !createdForm.UpdatedAt || 
+                                      new Date(createdForm.CreatedAt).getFullYear() < 1990 ||
+                                      new Date(createdForm.UpdatedAt).getFullYear() < 1990;
+                    
+                    if (needsUpdate) {
+                        console.log("AIフォームの日付を修正中...");
+                        const { error: updateError } = await supabase
+                            .from('Form')
+                            .update({
+                                CreatedAt: createdForm.CreatedAt && new Date(createdForm.CreatedAt).getFullYear() >= 1990 
+                                    ? createdForm.CreatedAt 
+                                    : now,
+                                UpdatedAt: now  // 最終更新日は現在時刻に設定
+                            })
+                            .eq('FormUUID', data.form_id);
+                        
+                        if (updateError) {
+                            console.error("日付更新エラー:", updateError);
+                        } else {
+                            console.log("AIフォームの日付を修正しました:", { CreatedAt: now, UpdatedAt: now });
+                        }
+                    }
+                } else {
+                    console.error("作成されたフォームがDBで見つかりません:", checkError);
+                }
+            }
+            
             setSuccess("フォームが正常に作成されました！");
 
             if(data.form_id != ""){
