@@ -149,8 +149,6 @@ export default function Project() {
           .from('Form')
           .select('*')
           .eq('Delete', false)
-          .eq('UserID', currentUser.id) // UserIDでログインユーザーのフォームのみ取得
-          .not('UserID', 'is', null) // UserIDがnullでないもののみ
           .order('CreatedAt', { ascending: false });
 
         if (error) {

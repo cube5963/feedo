@@ -1,10 +1,10 @@
 "use client";
 import {
-  Button, 
-  Card, 
-  CardContent, 
-  TextField, 
-  Typography, 
+  Button,
+  Card,
+  CardContent,
+  TextField,
+  Typography,
   Box,
   Alert,
   Stack
@@ -34,35 +34,36 @@ export default function AI(){
             const supabase = createPersonalClient();
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             setUser(currentUser);
-            
+
             if (!currentUser) {
                 router.push('/account/signin');
             }
         };
-        
+
         checkUser();
     }, [router]);
 
     const submit = async (e: React.FormEvent)=> {
         e.preventDefault()
-        
+
         // ログインチェック
         if (!user) {
             setError('ログインが必要です');
             router.push('/account/signin');
             return;
         }
-        
+
         setLoading(true);
         setError(null);
         setSuccess(null);
-        
+
         // 実際のログインユーザーのIDを使用
         const userId = user.id;
         console.log('ログインユーザーID:', userId, 'Email:', user.email);
-        
+
         //const url = "http://127.0.0.1:5000/";
-        const url = "https://b177608f-5fe1-5eba-3b08-96b26bf0824f.mtayo.net/"
+        //const url = "https://b177608f-5fe1-5eba-3b08-96b26bf0824f.mtayo.net/"
+        const url = process.env.NEXT_PUBLIC_AI_API_URL as string + "create";
         const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
 
         console.log('送信プロンプト:', send_prompt)
@@ -98,7 +99,7 @@ export default function AI(){
             const data = await response.json();
             console.log("AI APIレスポンス詳細:", data);
             console.log("AIで作成されたフォームID:", data.form_id);
-            
+
             // フォーム作成後、実際のデータベース状態を確認
             if (data.form_id) {
                 const supabase = createPersonalClient();
@@ -107,7 +108,7 @@ export default function AI(){
                     .select('*')
                     .eq('FormUUID', data.form_id)
                     .single();
-                
+
                 if (createdForm) {
                     console.log("AIで作成されたフォームのDB状態:", {
                         FormUUID: createdForm.FormUUID,
@@ -118,26 +119,26 @@ export default function AI(){
                         UpdatedAtType: typeof createdForm.UpdatedAt,
                         UserID: createdForm.UserID
                     });
-                    
+
                     // 作成日または最終更新日が適切でない場合、現在時刻で更新
                     const now = new Date().toISOString();
-                    const needsUpdate = !createdForm.CreatedAt || 
-                                      !createdForm.UpdatedAt || 
+                    const needsUpdate = !createdForm.CreatedAt ||
+                                      !createdForm.UpdatedAt ||
                                       new Date(createdForm.CreatedAt).getFullYear() < 1990 ||
                                       new Date(createdForm.UpdatedAt).getFullYear() < 1990;
-                    
+
                     if (needsUpdate) {
                         console.log("AIフォームの日付を修正中...");
                         const { error: updateError } = await supabase
                             .from('Form')
                             .update({
-                                CreatedAt: createdForm.CreatedAt && new Date(createdForm.CreatedAt).getFullYear() >= 1990 
-                                    ? createdForm.CreatedAt 
+                                CreatedAt: createdForm.CreatedAt && new Date(createdForm.CreatedAt).getFullYear() >= 1990
+                                    ? createdForm.CreatedAt
                                     : now,
                                 UpdatedAt: now  // 最終更新日は現在時刻に設定
                             })
                             .eq('FormUUID', data.form_id);
-                        
+
                         if (updateError) {
                             console.error("日付更新エラー:", updateError);
                         } else {
@@ -148,16 +149,16 @@ export default function AI(){
                     console.error("作成されたフォームがDBで見つかりません:", checkError);
                 }
             }
-            
+
             setSuccess("フォームが正常に作成されました！");
 
             if(data.form_id != ""){
                 await router.push(`/project/${data.form_id}`)
             }
-            
+
         } catch (error) {
             console.error("詳細エラー:", error);
-            
+
             if (error instanceof Error) {
                 if (error.name === 'AbortError') {
                     setError("リクエストがタイムアウトしました。サーバーの応答が遅い可能性があります。");
@@ -196,7 +197,7 @@ export default function AI(){
     return(
         <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
             {/* ヘッダー */}
-            <Header 
+            <Header
                 title="AI フォーム作成"
                 showBackButton={true}
             />
@@ -220,15 +221,15 @@ export default function AI(){
                         {/* フォーム */}
                         <Stack spacing={3} component="form" onSubmit={submit}>
                             <Box>
-                                <Typography 
-                                    variant="subtitle1" 
+                                <Typography
+                                    variant="subtitle1"
                                     sx={{ mb: 1, fontWeight: 600, color: 'text.primary' }}
                                 >
                                     フォームタイトル
                                 </Typography>
-                                <TextField 
-                                    value={prompt.title} 
-                                    onChange={(e) => setprompt({ ...prompt, title : e.target.value })} 
+                                <TextField
+                                    value={prompt.title}
+                                    onChange={(e) => setprompt({ ...prompt, title : e.target.value })}
                                     fullWidth
                                     placeholder="例：顧客満足度調査"
                                     variant="outlined"
@@ -237,15 +238,15 @@ export default function AI(){
                             </Box>
 
                             <Box>
-                                <Typography 
-                                    variant="subtitle1" 
+                                <Typography
+                                    variant="subtitle1"
                                     sx={{ mb: 1, fontWeight: 600, color: 'text.primary' }}
                                 >
                                     聞きたい内容
                                 </Typography>
-                                <TextField 
-                                    value={prompt.text} 
-                                    onChange={(e) => setprompt({ ...prompt, text  : e.target.value })} 
+                                <TextField
+                                    value={prompt.text}
+                                    onChange={(e) => setprompt({ ...prompt, text  : e.target.value })}
                                     fullWidth
                                     placeholder="例：サービスの品質、価格の満足度、改善点について知りたい"
                                     variant="outlined"
@@ -254,15 +255,15 @@ export default function AI(){
                                     size="small"
                                 />
                             </Box>
-                            
+
                             <Box sx={{ display: 'flex', gap: 2, pt: 2 }}>
-                                <Button 
+                                <Button
                                     type="submit"
                                     disabled={loading || !prompt.title || !prompt.text || !user}
                                     variant="contained"
                                     size="large"
                                     startIcon={loading ? null : <SendIcon />}
-                                    sx={{ 
+                                    sx={{
                                         flex: 1,
                                         height: 48,
                                         fontSize: '1rem',
@@ -275,7 +276,7 @@ export default function AI(){
                         </Stack>
                     </CardContent>
                 </Card>
-                
+
                 {/* エラー・成功メッセージ */}
                 {error && (
                     <Alert severity="error" sx={{ mb: 2 }}>

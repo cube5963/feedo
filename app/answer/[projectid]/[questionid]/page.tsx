@@ -144,7 +144,7 @@ export default function AnswerQuestionPage() {
                 const section = sections.find(s => s.SectionUUID === sectionUUID);
                 const answerSectionUUID = data[0].AnswerSectionUUID;
                 if (section && section.SectionType === "text") {
-                    await fetch('http://localhost:8080/tasks', {
+                    await fetch(process.env.NEXT_PUBLIC_AI_API_URL as string + "emotions", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'

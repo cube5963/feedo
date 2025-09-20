@@ -600,10 +600,28 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             };
 
             const sectionDesc = parseJsonSafely(section.SectionDesc, {});
+            /*
             const answers = responses.map(r => {
                 try {
                     return JSON.parse(r.Answer);
                 } catch {
+                    return r.Answer;
+                }
+            });
+             */
+            const answers = responses.map(r => {
+                try {
+                    const parsed = JSON.parse(r.Answer);
+                    // text以外のタイプは text プロパティだけを使う
+                    if (section.SectionType !== 'text' && typeof parsed === 'object' && parsed !== null && 'text' in parsed) {
+                        return parsed.text;
+                    }
+                    return parsed;
+                } catch {
+                    // text以外のタイプは r.Answer.text を使う
+                    if (section.SectionType !== 'text' && typeof r.Answer === 'object' && r.Answer !== null && 'text' in r.Answer) {
+                        return r.Answer.text;
+                    }
                     return r.Answer;
                 }
             });
@@ -1159,7 +1177,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                             { id: 2, value: predictCounts[2], label: 'ポジティブ' }
                                         ].sort((a, b) => b.value - a.value);;
 
-                                        const totalPredicts = predictCounts[0] + predictCounts[1];
+                                        //const totalPredicts = predictCounts[0] + predictCounts[1];
+                                        const totalPredicts = predictCounts[0] + predictCounts[1] + predictCounts[2];
+
 
                                         return totalPredicts > 0 ? (
                                             <Box

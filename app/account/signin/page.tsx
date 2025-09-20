@@ -10,9 +10,9 @@ import {
     Link
 } from "@mui/material";
 import { Google } from "@mui/icons-material";
-import Webnavi from "../../_components/webnavi";
 import { createClient } from "@/utils/supabase/client";
 import React, { useState } from 'react';
+import Header from "@/app/_components/Header";
 
 export default function SignIn() {
     const [formValues, setFormValues] = useState({
@@ -67,7 +67,7 @@ export default function SignIn() {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-            <Webnavi />
+            <Header showBackButton={false} showNavigation={true}/>
             <Box
                 sx={{
                     display: 'flex',
