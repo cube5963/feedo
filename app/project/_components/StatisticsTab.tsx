@@ -116,9 +116,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     // 回答データの変更を処理する関数（リアルタイム即座更新）
     const handleAnswerChange = useCallback(async (payload: any) => {
         console.log('� 回答データの変更を即座に処理中:', payload);
-        
+
         const { eventType, new: newRecord, old: oldRecord } = payload;
-        
+
         if (eventType === 'INSERT' && newRecord) {
             console.log('➕ 新しい回答が追加されました:', newRecord);
             // 即座にローカル統計を更新
@@ -135,10 +135,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     // 統計を即座に更新する関数
     const updateStatisticsInstantly = useCallback(async (sectionUUID: string, eventType: string, record: any) => {
         console.log(`⚡ セクション ${sectionUUID} の統計を即座に更新中...`);
-        
+
         try {
             const supabase = createClient();
-            
+
             // 最新の回答データを取得（効率的にセクション単位で取得）
             const { data: responses, error } = await supabase
                 .from('Answer')
@@ -164,12 +164,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             setStatistics(prev => {
                 if (!prev) return prev;
 
-                const updatedQuestionStats: QuestionStatistics[] = prev.questionStats.map((qs: QuestionStatistics) => {
+                const updatedQuestionStats = prev.questionStats.map(qs => {
                     if (qs.section.SectionUUID === sectionUUID) {
                         const newStatistics = calculateQuestionStatistics(qs.section, uniqueResponses);
                         console.log(`🎯 統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
-
-                        console.log(`統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
 
                         return {
                             ...qs,
@@ -183,8 +181,8 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
 
                 // 全体統計も即座に更新
                 const totalUniqueResponders = new Set<string>();
-                updatedQuestionStats.forEach((qs: QuestionStatistics) => {
-                    (qs.responses as any[]).forEach((response: any) => {
+                updatedQuestionStats.forEach(qs => {
+                    qs.responses.forEach(response => {
                         totalUniqueResponders.add(response.AnswerUUID || 'anonymous');
                     });
                 });
@@ -193,11 +191,11 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                     ...prev,
                     totalResponses: totalUniqueResponders.size,
                     responseRate: prev.totalQuestions > 0 ?
-                        (updatedQuestionStats.reduce((sum: number, q: QuestionStatistics) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
+                        (updatedQuestionStats.reduce((sum, q) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
                     questionStats: updatedQuestionStats
                 };
 
-                console.log('全体統計即座更新完了:', {
+                console.log('📊 全体統計即座更新完了:', {
                     totalResponses: updatedStats.totalResponses,
                     responseRate: Math.round(updatedStats.responseRate * 100) / 100
                 });
@@ -211,10 +209,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 [sectionUUID]: new Date()
             }));
 
-            console.log(`セクション ${sectionUUID} の統計を即座に更新完了`);
+            console.log(`✅ セクション ${sectionUUID} の統計を即座に更新完了`);
 
         } catch (error) {
-            console.error('統計即座更新エラー:', error);
+            console.error('❌ 統計即座更新エラー:', error);
             // エラー時はフォールバックとして従来の方法を使用
             refreshSectionStatistics(sectionUUID);
         }
@@ -602,10 +600,28 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             };
 
             const sectionDesc = parseJsonSafely(section.SectionDesc, {});
+            /*
             const answers = responses.map(r => {
                 try {
                     return JSON.parse(r.Answer);
                 } catch {
+                    return r.Answer;
+                }
+            });
+             */
+            const answers = responses.map(r => {
+                try {
+                    const parsed = JSON.parse(r.Answer);
+                    // text以外のタイプは text プロパティだけを使う
+                    if (section.SectionType !== 'text' && typeof parsed === 'object' && parsed !== null && 'text' in parsed) {
+                        return parsed.text;
+                    }
+                    return parsed;
+                } catch {
+                    // text以外のタイプは r.Answer.text を使う
+                    if (section.SectionType !== 'text' && typeof r.Answer === 'object' && r.Answer !== null && 'text' in r.Answer) {
+                        return r.Answer.text;
+                    }
                     return r.Answer;
                 }
             });
@@ -712,12 +728,34 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
 
     const calculateTextStatistics = (answers: string[]) => {
         //const validAnswers = answers.filter(answer => typeof answer === 'string' && answer.trim() !== '');
+        /*
         const validAnswers = answers.filter(answer => answer.trim() !== '');
         return {
             type: 'text',
             total: validAnswers.length,
             responses: validAnswers
         };
+        */
+
+        const validAnswers = answers
+            .map(answer => {
+                if(typeof answer === 'object' && answer !== null && answer.text) {
+                    return String(answer.text);
+                }
+
+                if(typeof answer === 'string')
+                    return answer
+
+                return null;
+            })
+            .filter(text => text !== null && text.trim() !== '')
+            .map(text => text!.trim());
+
+        return {
+            type: 'text',
+            total: validAnswers.length,
+            responses: validAnswers
+        }
     };
 
     const calculateTwoChoiceStatistics = (answers: any[]) => {
@@ -865,16 +903,16 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                         '50%': { transform: 'scale(1.1)' },
                                         '100%': { transform: 'scale(1)' }
                                     },
-                                    animation: sectionLastUpdated[sectionId] && 
-                                              (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                              'bounce 0.6s ease-in-out' : 'none',
+                                    animation: sectionLastUpdated[sectionId] &&
+                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                        'bounce 0.6s ease-in-out' : 'none',
                                     // 新しい回答時の背景色変化
-                                    backgroundColor: sectionLastUpdated[sectionId] && 
-                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                    'primary.light' : 'transparent',
-                                    color: sectionLastUpdated[sectionId] && 
-                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                          'primary.contrastText' : 'primary.main'
+                                    backgroundColor: sectionLastUpdated[sectionId] &&
+                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                        'primary.light' : 'transparent',
+                                    color: sectionLastUpdated[sectionId] &&
+                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                        'primary.contrastText' : 'primary.main'
                                 }}
                             />
                             {sectionLastUpdated[sectionId] && (
@@ -930,9 +968,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                             '70%': { boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)' },
                                             '100%': { boxShadow: '0 0 0 0 rgba(25, 118, 210, 0)' }
                                         },
-                                        animation: sectionLastUpdated[sectionId] && 
-                                                  (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                  'pulse 1s ease-out' : 'none'
+                                        animation: sectionLastUpdated[sectionId] &&
+                                        (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                            'pulse 1s ease-out' : 'none'
                                     }}
                                 >
                                     <PieChart
@@ -952,10 +990,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                             {statistics.type === 'star' && (
                                 <Box sx={{position: 'relative'}}>
                                     {currentStarViewMode === 'average' ? (
-                                        <Box 
+                                        <Box
                                             key={`star-avg-${sectionId}-${responseCount}`} // リアルタイム更新のキー
                                             sx={{
-                                                textAlign: 'center', 
+                                                textAlign: 'center',
                                                 py: 2,
                                                 transition: 'all 0.5s ease-in-out',
                                                 // リアルタイム更新時の星の輝き効果
@@ -964,23 +1002,23 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                                     '50%': { transform: 'scale(1.05)', filter: 'brightness(1.2)' },
                                                     '100%': { transform: 'scale(1)', filter: 'brightness(1)' }
                                                 },
-                                                animation: sectionLastUpdated[sectionId] && 
-                                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                          'starGlow 1.2s ease-in-out' : 'none'
+                                                animation: sectionLastUpdated[sectionId] &&
+                                                (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                    'starGlow 1.2s ease-in-out' : 'none'
                                             }}
                                         >
                                             <Box sx={{display: 'flex', justifyContent: 'center', mb: 2}}>
                                                 {renderStarRating(statistics.average, statistics.maxStars)}
                                             </Box>
-                                            <Typography 
-                                                variant="h4" 
-                                                color="primary.main" 
+                                            <Typography
+                                                variant="h4"
+                                                color="primary.main"
                                                 sx={{
                                                     mb: 1,
                                                     transition: 'all 0.3s ease',
-                                                    fontWeight: sectionLastUpdated[sectionId] && 
-                                                               (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                               'bold' : 'normal'
+                                                    fontWeight: sectionLastUpdated[sectionId] &&
+                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                        'bold' : 'normal'
                                                 }}
                                             >
                                                 {statistics.average}
@@ -1002,9 +1040,9 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                                     '50%': { filter: 'brightness(1.1)' },
                                                     '100%': { filter: 'brightness(1)' }
                                                 },
-                                                animation: sectionLastUpdated[sectionId] && 
-                                                          (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ? 
-                                                          'glow 1.5s ease-in-out' : 'none'
+                                                animation: sectionLastUpdated[sectionId] &&
+                                                (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                    'glow 1.5s ease-in-out' : 'none'
                                             }}
                                         >
                                             <BarChart
@@ -1093,7 +1131,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                                 wordBreak: 'break-word'
                                             }}
                                         >
-                                            "{response}"
+                                            {response}
                                         </Typography>
                                     ))}
                                 </Box>
@@ -1106,13 +1144,85 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#f8f9fa',
+                            backgroundColor: statistics.type === 'text' ? 'transparent' : '#f8f9fa',
                             borderRadius: 1,
-                            border: '1px dashed #ddd'
+                            border: statistics.type === 'text' ? 'none' : '1px dashed #ddd'
                         }}>
-                            <Typography variant="body2" color="text.secondary">
-                                将来の機能用スペース
-                            </Typography>
+                            {statistics.type === 'text' ? (
+                                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                                        感情分析
+                                    </Typography>
+                                    {(() => {
+                                        // predictの値を集計
+                                        const predictCounts = { 0: 0, 1: 0, 2: 0 };
+                                        statistics.responses.forEach((response: string, index: number) => {
+                                            // 対応する回答データからpredictを取得
+                                            const answerData = questionStat.responses[index];
+                                            if (answerData && answerData.Answer) {
+                                                try {
+                                                    const parsed = JSON.parse(answerData.Answer);
+                                                    if (typeof parsed.predict === 'number' && (parsed.predict === 0 || parsed.predict === 1 || parsed.predict === 2)) {
+                                                        predictCounts[parsed.predict]++;
+                                                    }
+                                                } catch (error) {
+                                                    console.warn('予測データ解析エラー:', error);
+                                                }
+                                            }
+                                        });
+
+                                        const predictData = [
+                                            { id: 0, value: predictCounts[0], label: 'ネガティブ' },
+                                            { id: 1, value: predictCounts[1], label: 'ニュートラル' },
+                                            { id: 2, value: predictCounts[2], label: 'ポジティブ' }
+                                        ].sort((a, b) => b.value - a.value);;
+
+                                        //const totalPredicts = predictCounts[0] + predictCounts[1];
+                                        const totalPredicts = predictCounts[0] + predictCounts[1] + predictCounts[2];
+
+
+                                        return totalPredicts > 0 ? (
+                                            <Box
+                                                key={`predict-${sectionId}-${totalPredicts}`}
+                                                sx={{
+                                                    transition: 'all 0.5s ease-in-out',
+                                                    '@keyframes predictPulse': {
+                                                        '0%': { boxShadow: '0 0 0 0 rgba(156, 39, 176, 0.4)' },
+                                                        '70%': { boxShadow: '0 0 0 10px rgba(156, 39, 176, 0)' },
+                                                        '100%': { boxShadow: '0 0 0 0 rgba(156, 39, 176, 0)' }
+                                                    },
+                                                    animation: sectionLastUpdated[sectionId] &&
+                                                    (Date.now() - sectionLastUpdated[sectionId].getTime()) < 2000 ?
+                                                        'predictPulse 1s ease-out' : 'none'
+                                                }}
+                                            >
+                                                <PieChart
+                                                    series={[
+                                                        {
+                                                            data: predictData,
+                                                            highlightScope: { fade: 'global', highlight: 'item' },
+                                                            faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                                                        },
+                                                    ]}
+                                                    height={180}
+                                                    colors={['#ff5722', '#ffc107', '#4caf50']} // 0: オレンジ, 1: グリーン
+                                                />
+                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                                    総予測数: {totalPredicts}件
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">
+                                                予測データがありません
+                                            </Typography>
+                                        );
+                                    })()}
+                                </Box>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                    将来の機能用スペース
+                                </Typography>
+                            )}
                         </Box>
                     </Box>
                 </CardContent>
@@ -1243,14 +1353,14 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                         '50%': { backgroundColor: 'primary.light' },
                         '100%': { backgroundColor: 'background.paper' }
                     },
-                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                               'highlight 2s ease-in-out' : 'none'
+                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                        'highlight 2s ease-in-out' : 'none'
                 }}>
                     <CardContent sx={{textAlign: 'center'}}>
                         <PeopleIcon sx={{fontSize: 40, color: '#1976d2', mb: 1}}/>
-                        <Typography 
+                        <Typography
                             key={`total-responses-${statistics.totalResponses}`} // リアルタイム更新のキー
-                            variant="h4" 
+                            variant="h4"
                             color="primary.main"
                             sx={{
                                 transition: 'all 0.4s ease-in-out',
@@ -1259,8 +1369,8 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                     '50%': { transform: 'scale(1.15)' },
                                     '100%': { transform: 'scale(1)' }
                                 },
-                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                                          'countUp 0.8s ease-in-out' : 'none'
+                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                                    'countUp 0.8s ease-in-out' : 'none'
                             }}
                         >
                             {statistics.totalResponses}
@@ -1286,19 +1396,19 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 <Card sx={{
                     transition: 'all 0.3s ease',
                     // 回答率更新時の効果
-                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                               'highlight 2s ease-in-out' : 'none'
+                    animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                        'highlight 2s ease-in-out' : 'none'
                 }}>
                     <CardContent sx={{textAlign: 'center'}}>
                         <BarChartIcon sx={{fontSize: 40, color: '#4caf50', mb: 1}}/>
-                        <Typography 
+                        <Typography
                             key={`response-rate-${statistics.responseRate.toFixed(1)}`} // リアルタイム更新のキー
-                            variant="h4" 
+                            variant="h4"
                             color="primary.main"
                             sx={{
                                 transition: 'all 0.4s ease-in-out',
-                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ? 
-                                          'countUp 0.8s ease-in-out' : 'none'
+                                animation: lastUpdated && (Date.now() - lastUpdated.getTime()) < 3000 ?
+                                    'countUp 0.8s ease-in-out' : 'none'
                             }}
                         >
                             {statistics.responseRate.toFixed(1)}
