@@ -61,8 +61,6 @@ export default function AI(){
         const userId = user.id;
         console.log('ログインユーザーID:', userId, 'Email:', user.email);
 
-        //const url = "http://127.0.0.1:5000/";
-        //const url = "https://b177608f-5fe1-5eba-3b08-96b26bf0824f.mtayo.net/"
         const url = process.env.NEXT_PUBLIC_AI_API_URL as string + "create";
         const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
 
@@ -172,25 +170,6 @@ export default function AI(){
             }
         } finally {
             setLoading(false);
-        }
-    }
-
-    // サーバーヘルスチェック機能を追加
-    const checkServerHealth = async () => {
-        const url = "https://b177608f-5fe1-5eba-3b08-96b26bf0824f.mtayo.net/"
-        try {
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json",
-                },
-                cache: 'no-cache'
-            });
-            console.log('サーバーヘルスチェック:', response.status);
-            return response.ok;
-        } catch (error) {
-            console.log('サーバーヘルスチェック失敗:', error);
-            return false;
         }
     }
 
