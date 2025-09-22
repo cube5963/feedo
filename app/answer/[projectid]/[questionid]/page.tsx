@@ -229,8 +229,8 @@ export default function AnswerQuestionPage() {
         */
 
         setIsSubmitting(false);
-        alert('アンケートの回答が完了しました！ご協力ありがとうございました。');
-        router.push(`/project/${projectId}`);
+        
+        router.push(`/answer/${projectId}/complete`);
     };
 
     const handleBack = () => {

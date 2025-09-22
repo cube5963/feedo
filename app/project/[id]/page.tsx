@@ -33,9 +33,56 @@ export default function ProjectPage() {
     const router = useRouter()
     const projectId = params.id as string
     const [formTitle, setFormTitle] = useState("")
+    const [formMessage, setFormMessage] = useState("")
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState("")
     const [currentTab, setCurrentTab] = useState(0) // タブの状態を追加
+    // フォーム終了メッセージを取得する関数
+    const fetchFormMessage = async () => {
+        try {
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('Form')
+                .select('FormMessage')
+                .eq('FormUUID', projectId)
+                .eq('Delete', false)
+                .single()
+
+            if (error || !data) {
+                console.error('フォームメッセージ取得エラー:', error)
+                return
+            }
+            setFormMessage(data.FormMessage || '')
+        } catch (error) {
+            console.error('フォームメッセージ取得エラー:', error)
+        }
+    }
+
+    // フォーム終了メッセージを更新する関数
+    const updateFormMessage = async (newFormMessage: string) => {
+        setLoading(true)
+        try {
+            const supabase = createClient()
+            const { error } = await supabase
+                .from('Form')
+                .update({ FormMessage: newFormMessage, UpdatedAt: new Date().toISOString() })
+                .eq('FormUUID', projectId)
+                .eq('Delete', false)
+
+            if (error) {
+                console.error('フォームメッセージ更新エラー:', error)
+                setMessage('アンケート終了メッセージの更新に失敗しました')
+                return
+            }
+            setMessage('アンケート終了メッセージを更新しました')
+            setTimeout(() => setMessage(''), 3000)
+        } catch (error) {
+            console.error('フォームメッセージ更新エラー:', error)
+            setMessage('アンケート終了メッセージの更新に失敗しました')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const [imageUrl, setImageUrl] = useState<string | null>(null)
     const [uploading, setUploading] = useState(false)
@@ -91,8 +138,9 @@ export default function ProjectPage() {
                 return
             }
 
-            // 最初の質問のプレビューページに移動
-            router.push(`/preview/${projectId}/${sections[0].SectionUUID}`)
+            // 最初の質問のプレビューページを新しいタブで開く
+            const previewUrl = `/preview/${projectId}/${sections[0].SectionUUID}`;
+            window.open(previewUrl, '_blank');
         } catch (error) {
             console.error('プレビューエラー:', error)
             setMessage('プレビューの表示に失敗しました')
@@ -216,10 +264,11 @@ export default function ProjectPage() {
         setMessage('画像をアップロードしました')
     }
 
-    // コンポーネントマウント時にフォーム名を取得
+    // コンポーネントマウント時にフォーム名・メッセージを取得
     useEffect(() => {
         if (projectId) {
             fetchFormName()
+            fetchFormMessage()
         }
     }, [projectId])
 
@@ -342,6 +391,29 @@ export default function ProjectPage() {
                 </Typography>
 
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                    <FormControl component="fieldset">
+                        <FormLabel style={{fontWeight: 'bold', color: 'black'}}>アンケート終了後のメッセージ</FormLabel>
+                        <Box sx={{ mt: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                アンケートが終了したときに表示されるメッセージを設定できます。
+                            </Typography>
+                            <TextField
+                                variant="outlined"
+                                fullWidth
+                                multiline
+                                minRows={2}
+                                maxRows={4}
+                                placeholder="例: ご協力ありがとうございました！"
+                                sx={{ mt: 1 }}
+                                value={formMessage}
+                                onChange={(e) => setFormMessage(e.target.value)}
+                                onBlur={() => updateFormMessage(formMessage)}
+                                inputProps={{ maxLength: 200 }}
+                                disabled={loading}
+                            />
+                        </Box>
+                    </FormControl>
+                    
                     <FormControl component="fieldset">
                         <FormLabel component="legend">回答の公開設定</FormLabel>
                         <Box sx={{mt: 1}}>
