@@ -164,10 +164,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             setStatistics(prev => {
                 if (!prev) return prev;
 
-                const updatedQuestionStats = prev.questionStats.map(qs => {
+                const updatedQuestionStats: QuestionStatistics[] = prev.questionStats.map((qs: QuestionStatistics) => {
                     if (qs.section.SectionUUID === sectionUUID) {
                         const newStatistics = calculateQuestionStatistics(qs.section, uniqueResponses);
-                        console.log(`🎯 統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
+                        console.log(`統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
                         
                         return {
                             ...qs,
@@ -181,8 +181,8 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
 
                 // 全体統計も即座に更新
                 const totalUniqueResponders = new Set<string>();
-                updatedQuestionStats.forEach(qs => {
-                    qs.responses.forEach(response => {
+                updatedQuestionStats.forEach((qs: QuestionStatistics) => {
+                    (qs.responses as any[]).forEach((response: any) => {
                         totalUniqueResponders.add(response.AnswerUUID || 'anonymous');
                     });
                 });
@@ -191,11 +191,11 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                     ...prev,
                     totalResponses: totalUniqueResponders.size,
                     responseRate: prev.totalQuestions > 0 ?
-                        (updatedQuestionStats.reduce((sum, q) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
+                        (updatedQuestionStats.reduce((sum: number, q: QuestionStatistics) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
                     questionStats: updatedQuestionStats
                 };
 
-                console.log('📊 全体統計即座更新完了:', {
+                console.log('全体統計即座更新完了:', {
                     totalResponses: updatedStats.totalResponses,
                     responseRate: Math.round(updatedStats.responseRate * 100) / 100
                 });
@@ -209,10 +209,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 [sectionUUID]: new Date()
             }));
 
-            console.log(`✅ セクション ${sectionUUID} の統計を即座に更新完了`);
+            console.log(`セクション ${sectionUUID} の統計を即座に更新完了`);
 
         } catch (error) {
-            console.error('❌ 統計即座更新エラー:', error);
+            console.error('統計即座更新エラー:', error);
             // エラー時はフォールバックとして従来の方法を使用
             refreshSectionStatistics(sectionUUID);
         }
@@ -220,14 +220,14 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
 
     // SSEから受信した統計データでセクションを更新する関数（既存のSSE用、互換性のため残す）
     const updateSectionStatistics = useCallback((sectionUUID: string, newStatistics: any) => {
-        console.log(`📊 セクション ${sectionUUID} の統計を更新:`, newStatistics);
+        console.log(`セクション ${sectionUUID} の統計を更新:`, newStatistics);
 
         setStatistics(prev => {
             if (!prev) return prev;
 
             const updatedQuestionStats = prev.questionStats.map(qs => {
                 if (qs.section.SectionUUID === sectionUUID) {
-                    console.log(`✅ 統計更新: ${qs.section.SectionName}`);
+                    console.log(`統計更新: ${qs.section.SectionName}`);
                     return {
                         ...qs,
                         responseCount: newStatistics.totalResponses,
@@ -359,7 +359,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 .eq('SectionUUID', sectionUUID);
 
             if (responsesError) {
-                console.error('❌ セクション回答データ取得エラー:', responsesError);
+                console.error('セクション回答データ取得エラー:', responsesError);
                 return;
             }
 
@@ -436,10 +436,10 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 [sectionUUID]: new Date()
             }));
 
-            console.log(`✅ Section ${sectionUUID} statistics updated successfully`);
+            console.log(`Section ${sectionUUID} statistics updated successfully`);
 
         } catch (error) {
-            console.error('❌ セクション統計更新エラー:', error);
+            console.error('セクション統計更新エラー:', error);
         } finally {
             setSectionRefreshing(prev => ({...prev, [sectionUUID]: false}));
         }
@@ -1222,11 +1222,11 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                     }}
                 >
                     {realtimeConnected ? (
-                        <> ✅ リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
+                        <>リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
                     ) : realtimeError ? (
-                        <>🟡 リアルタイム接続に問題があります。手動更新ボタンで最新データを取得してください。</>
+                        <>リアルタイム接続に問題があります。手動更新ボタンで最新データを取得してください。</>
                     ) : (
-                        <>🔄 リアルタイム統計機能を初期化中です...</>
+                        <>リアルタイム統計機能を初期化中です...</>
                     )}
                 </Alert>
             )}

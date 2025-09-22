@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, Button, IconButton, CircularProgress } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LogoutIcon from '@mui/icons-material/Logout';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface AnswerNavigationButtonsProps {
@@ -110,10 +110,9 @@ export default function AnswerNavigationButtons({
           )}
         </Box>
 
-        {/* 次へボタン */}
+        {/* 退出ボタン */}
         <IconButton
-          onClick={isLastQuestion ? onComplete : onNext}
-          disabled={!isAnswered || isSubmitting}
+          onClick={onComplete}
           sx={{ 
             minWidth: 48,
             minHeight: 48,
@@ -121,10 +120,9 @@ export default function AnswerNavigationButtons({
             '&:hover': {
               backgroundColor: (isAnswered && !isSubmitting) ? '#e0e0e0' : 'transparent'
             },
-            opacity: (isAnswered && !isSubmitting) ? 1 : 0.3
           }}
         >
-          {isLastQuestion ? <CheckCircleIcon /> : <ArrowForwardIcon />}
+          <LogoutIcon />
         </IconButton>
       </Box>
     </Box>

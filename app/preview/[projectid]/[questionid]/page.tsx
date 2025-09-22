@@ -114,8 +114,7 @@ export default function PreviewQuestionPage() {
 
   const handleComplete = () => {
     // 完了処理（回答の保存など）
-    alert('アンケートが完了しました！');
-    router.push(`/project/${projectId}`);
+    router.push(`/preview/${projectId}/complete`);
   };
 
   const handleBack = () => {
