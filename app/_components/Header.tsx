@@ -11,6 +11,7 @@ interface HeaderProps {
     onBack?: () => void;
     showBackButton?: boolean;
     showNavigation?: boolean;
+    showActions?: boolean;
     maxWidth?: number;
 }
 
@@ -19,6 +20,7 @@ export default function Header({
                                    onBack,
                                    showBackButton = true,
                                    showNavigation = false,
+                                   showActions = true,
                                    maxWidth = 1200,
                                }: HeaderProps) {
     const router = useRouter();
@@ -194,40 +196,44 @@ export default function Header({
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                     {!showBackButton && (
                         <>
-                            <Button
-                                onClick={() => router.push('/account/signup')}
-                                sx={{
-                                    backgroundColor: '#000',
-                                    color: '#fff',
-                                    fontWeight: 600,
-                                    textTransform: 'none',
-                                    px: 3,
-                                    py: 1,
-                                    borderRadius: 2,
-                                    '&:hover': {
-                                        backgroundColor: '#333'
-                                    }
-                                }}
-                            >
-                                始める
-                            </Button>
-                            <Button
-                                onClick={() => router.push('/account/signin')}
-                                sx={{
-                                    color: '#000',
-                                    fontWeight: 500,
-                                    textTransform: 'none',
-                                    px: 3,
-                                    py: 1,
-                                    borderRadius: 2,
-                                    display: {xs: 'none', sm: 'block'},
-                                    '&:hover': {
-                                        backgroundColor: '#f5f5f5'
-                                    }
-                                }}
-                            >
+                            {showActions && (
+                                <>
+                                <Button
+                                    onClick={() => router.push('/account/signup')}
+                                    sx={{
+                                        backgroundColor: '#000',
+                                        color: '#fff',
+                                        fontWeight: 600,
+                                        textTransform: 'none',
+                                        px: 3,
+                                        py: 1,
+                                        borderRadius: 2,
+                                        '&:hover': {
+                                            backgroundColor: '#333'
+                                        }
+                                    }}
+                                >
+                                    始める
+                                </Button>
+                                <Button
+                                    onClick={() => router.push('/account/signin')}
+                                    sx={{
+                                        color: '#000',
+                                        fontWeight: 500,
+                                        textTransform: 'none',
+                                        px: 3,
+                                        py: 1,
+                                        borderRadius: 2,
+                                        display: {xs: 'none', sm: 'block'},
+                                        '&:hover': {
+                                            backgroundColor: '#f5f5f5'
+                                        }
+                                    }}
+                                >
                                 ログイン
-                            </Button>
+                                </Button>
+                                </>
+                            )}
                         </>
                     )}
 

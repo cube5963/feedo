@@ -1,58 +1,12 @@
 "use client";
-import {
-    Box,
-    Container,
-    Typography,
-    Button,
-    Card,
-    CardContent,
-    Stack,
-    Chip,
-    Avatar,
-    Paper,
-    Divider
-} from '@mui/material';
-import {
-    PlayArrow,
-    AutoAwesome,
-    Speed,
-    BarChart,
-    Shield,
-    CheckCircleOutline,
-    ArrowForward,
-    Star,
-    TrendingUp
-} from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import {Box, Button, Card, Chip, Container, Divider, Paper, Stack, Typography} from '@mui/material';
+import {AutoAwesome, BarChart, CheckCircleOutline, PlayArrow, Shield, Speed, Star} from '@mui/icons-material';
+import {useRouter} from 'next/navigation';
+import React, {useEffect, useRef} from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
-import {
-    useFadeInAnimation,
-    useSlideInAnimation,
-    useScaleAnimation,
-    useStaggerAnimation,
-    useParallaxAnimation,
-    useHoverAnimation,
-    useCountUpAnimation
-} from '../lib/hooks/useGSAPAnimations';
-import {
-    AnimatedCard,
-    AnimatedButton,
-    FloatingElement,
-    PulsingElement,
-    GlowEffect,
-    SushiBelt,
-    ExplodeEffect,
-    Flip3DCard,
-    IntenseBounce,
-    RainbowGlow,
-    ParticleExplosion,
-    MatrixText,
-    SparkleEffect,
-    NeonGlow
-} from './_components/AnimatedComponents';
-import WebNavi from './_components/webnavi';
+import {ScrollTrigger} from 'gsap/dist/ScrollTrigger';
+import {GlowEffect} from './_components/AnimatedComponents';
+import Header from "@/app/_components/Header";
 
 export default function Home() {
     const router = useRouter();
@@ -80,29 +34,29 @@ export default function Home() {
 
                 if (heroChip) {
                     tl.fromTo(heroChip,
-                        { y: 30, opacity: 0 },
-                        { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" }
+                        {y: 30, opacity: 0},
+                        {y: 0, opacity: 1, duration: 0.8, ease: "power2.out"}
                     );
                 }
 
                 if (heroTitle) {
                     tl.fromTo(heroTitle,
-                        { y: 50, opacity: 0 },
-                        { y: 0, opacity: 1, duration: 1, ease: "power2.out" }, "-=0.5"
+                        {y: 50, opacity: 0},
+                        {y: 0, opacity: 1, duration: 1, ease: "power2.out"}, "-=0.5"
                     );
                 }
 
                 if (heroDescription) {
                     tl.fromTo(heroDescription,
-                        { y: 30, opacity: 0 },
-                        { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" }, "-=0.3"
+                        {y: 30, opacity: 0},
+                        {y: 0, opacity: 1, duration: 0.8, ease: "power2.out"}, "-=0.3"
                     );
                 }
 
                 if (heroButtons.length > 0) {
                     tl.fromTo(heroButtons,
-                        { y: 30, opacity: 0, scale: 0.95 },
-                        { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.7)", stagger: 0.1 }, "-=0.2"
+                        {y: 30, opacity: 0, scale: 0.95},
+                        {y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.7)", stagger: 0.1}, "-=0.2"
                     );
                 }
             }
@@ -112,7 +66,7 @@ export default function Home() {
                 const featureCards = featuresRef.current.querySelectorAll('.feature-card');
                 if (featureCards.length > 0) {
                     gsap.fromTo(featureCards,
-                        { y: 60, opacity: 0, scale: 0.9 },
+                        {y: 60, opacity: 0, scale: 0.9},
                         {
                             y: 0,
                             opacity: 1,
@@ -136,7 +90,7 @@ export default function Home() {
                 const statItems = statsRef.current.querySelectorAll('.stat-item');
                 if (statItems.length > 0) {
                     gsap.fromTo(statItems,
-                        { y: 40, opacity: 0 },
+                        {y: 40, opacity: 0},
                         {
                             y: 0,
                             opacity: 1,
@@ -158,7 +112,7 @@ export default function Home() {
                 const testimonialCards = testimonialRef.current.querySelectorAll('.testimonial-card');
                 if (testimonialCards.length > 0) {
                     gsap.fromTo(testimonialCards,
-                        { x: -50, opacity: 0 },
+                        {x: -50, opacity: 0},
                         {
                             x: 0,
                             opacity: 1,
@@ -178,7 +132,7 @@ export default function Home() {
             // CTAセクションのアニメーション
             if (ctaRef.current) {
                 gsap.fromTo(ctaRef.current,
-                    { y: 50, opacity: 0, scale: 0.95 },
+                    {y: 50, opacity: 0, scale: 0.95},
                     {
                         y: 0,
                         opacity: 1,
@@ -218,32 +172,32 @@ export default function Home() {
 
     const features = [
         {
-            icon: <AutoAwesome sx={{ fontSize: 32, color: '#000' }} />,
+            icon: <AutoAwesome sx={{fontSize: 32, color: '#000'}}/>,
             title: 'AI自動生成',
             description: '質問内容を入力するだけで、AIが最適なフォーム構成を瞬時に生成'
         },
         {
-            icon: <Speed sx={{ fontSize: 32, color: '#000' }} />,
+            icon: <Speed sx={{fontSize: 32, color: '#000'}}/>,
             title: '高速作成',
             description: '従来の10分の1の時間でプロフェッショナルなフォームが完成'
         },
         {
-            icon: <BarChart sx={{ fontSize: 32, color: '#000' }} />,
+            icon: <BarChart sx={{fontSize: 32, color: '#000'}}/>,
             title: 'リアルタイム分析',
             description: '回答データを即座に可視化し、洞察を得られるダッシュボード'
         },
         {
-            icon: <Shield sx={{ fontSize: 32, color: '#000' }} />,
+            icon: <Shield sx={{fontSize: 32, color: '#000'}}/>,
             title: 'セキュア',
             description: 'エンタープライズ級のセキュリティでデータを保護'
         }
     ];
 
     const stats = [
-        { number: '50,000+', label: '作成されたフォーム' },
-        { number: '99.9%', label: 'アップタイム' },
-        { number: '10秒', label: '平均作成時間' },
-        { number: '500+', label: '満足企業' }
+        {number: '50,000+', label: '作成されたフォーム'},
+        {number: '99.9%', label: 'アップタイム'},
+        {number: '10秒', label: '平均作成時間'},
+        {number: '500+', label: '満足企業'}
     ];
 
     const testimonials = [
@@ -292,11 +246,12 @@ export default function Home() {
     ];
 
     return (
-        <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-            <WebNavi />
+        <Box sx={{minHeight: '100vh', backgroundColor: '#ffffff'}}>
+            <Header showBackButton={false} showNavigation={true}/>
 
             {/* ヒーローセクション */}
-            <Box ref={heroRef} sx={{ pt: 12, pb: 8, backgroundColor: '#000', color: '#fff' }} className="parallax-section">
+            <Box ref={heroRef} sx={{pt: 12, pb: 8, backgroundColor: '#000', color: '#fff'}}
+                 className="parallax-section">
                 <Box className="parallax-bg" sx={{
                     position: 'absolute',
                     top: 0,
@@ -305,7 +260,7 @@ export default function Home() {
                     height: '120%',
                     backgroundColor: 'linear-gradient(45deg, #000 0%, #333 100%)',
                     zIndex: -1
-                }} />
+                }}/>
                 <Container maxWidth="lg">
                     <Box sx={{
                         display: 'flex',
@@ -314,7 +269,7 @@ export default function Home() {
                         gap: 4,
                         minHeight: '70vh'
                     }}>
-                        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 60%' } }}>
+                        <Box sx={{flex: {xs: '1 1 100%', md: '1 1 60%'}}}>
                             <Stack spacing={4}>
                                 <Chip
                                     className="hero-chip"
@@ -333,14 +288,14 @@ export default function Home() {
                                     component="h1"
                                     sx={{
                                         fontWeight: 900,
-                                        fontSize: { xs: '3rem', md: '4.5rem' },
+                                        fontSize: {xs: '3rem', md: '4.5rem'},
                                         lineHeight: 1.1,
                                         letterSpacing: '-0.02em'
                                     }}
                                 >
                                     フォーム作成を
-                                    <br />
-                                    <Box component="span" sx={{ color: '#fff', textDecoration: 'underline' }}>
+                                    <br/>
+                                    <Box component="span" sx={{color: '#fff', textDecoration: 'underline'}}>
                                         革新する
                                     </Box>
                                 </Typography>
@@ -357,7 +312,7 @@ export default function Home() {
                                     AIがあなたの質問を理解し、最適なフォームを瞬時に生成。
                                     データ収集から分析まで、すべてをシンプルに。
                                 </Typography>
-                                <Stack direction="row" spacing={3} sx={{ mt: 4 }}>
+                                <Stack direction="row" spacing={3} sx={{mt: 4}}>
                                     <GlowEffect glowColor="#ffffff" intensity={15}>
                                         <Button
                                             className="hero-button"
@@ -387,7 +342,7 @@ export default function Home() {
                                         className="hero-button"
                                         variant="outlined"
                                         size="large"
-                                        startIcon={<PlayArrow />}
+                                        startIcon={<PlayArrow/>}
                                         onClick={() => router.push('/features')}
                                         sx={{
                                             borderColor: '#fff',
@@ -411,7 +366,7 @@ export default function Home() {
                             </Stack>
                         </Box>
                         <Box sx={{
-                            flex: { xs: '1 1 100%', md: '1 1 40%' },
+                            flex: {xs: '1 1 100%', md: '1 1 40%'},
                             textAlign: 'center'
                         }}>
                             <Paper
@@ -424,7 +379,7 @@ export default function Home() {
                                     border: '2px solid #e0e0e0'
                                 }}
                             >
-                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                                <Typography variant="h6" sx={{fontWeight: 600, mb: 3}}>
                                     📊 顧客満足度調査
                                 </Typography>
                                 <Stack spacing={2}>
@@ -438,12 +393,12 @@ export default function Home() {
                                             borderRadius: 2,
                                             border: '1px solid #e0e0e0'
                                         }}>
-                                            <CheckCircleOutline sx={{ fontSize: 18, color: '#000' }} />
+                                            <CheckCircleOutline sx={{fontSize: 18, color: '#000'}}/>
                                             <Typography variant="body2">{question}</Typography>
                                         </Box>
                                     ))}
                                 </Stack>
-                                <Typography variant="caption" sx={{ mt: 2, opacity: 0.6, display: 'block' }}>
+                                <Typography variant="caption" sx={{mt: 2, opacity: 0.6, display: 'block'}}>
                                     AIがアンケートを自動生成
                                 </Typography>
                             </Paper>
@@ -453,7 +408,12 @@ export default function Home() {
             </Box>
 
             {/* 統計セクション */}
-            <Box ref={statsRef} sx={{ py: 6, backgroundColor: '#f8f8f8', borderTop: '1px solid #e0e0e0', borderBottom: '1px solid #e0e0e0' }}>
+            <Box ref={statsRef} sx={{
+                py: 6,
+                backgroundColor: '#f8f8f8',
+                borderTop: '1px solid #e0e0e0',
+                borderBottom: '1px solid #e0e0e0'
+            }}>
                 <Container maxWidth="lg">
                     <Box sx={{
                         display: 'flex',
@@ -463,18 +423,18 @@ export default function Home() {
                         textAlign: 'center'
                     }}>
                         {stats.map((stat, index) => (
-                            <Box key={index} className="stat-item" sx={{ flex: '1 1 200px' }}>
+                            <Box key={index} className="stat-item" sx={{flex: '1 1 200px'}}>
                                 <Typography
                                     variant="h3"
                                     sx={{
                                         fontWeight: 900,
                                         color: '#000',
-                                        fontSize: { xs: '2rem', md: '3rem' }
+                                        fontSize: {xs: '2rem', md: '3rem'}
                                     }}
                                 >
                                     {stat.number}
                                 </Typography>
-                                <Typography variant="body1" sx={{ opacity: 0.7, fontWeight: 500 }}>
+                                <Typography variant="body1" sx={{opacity: 0.7, fontWeight: 500}}>
                                     {stat.label}
                                 </Typography>
                             </Box>
@@ -484,21 +444,21 @@ export default function Home() {
             </Box>
 
             {/* 機能紹介セクション */}
-            <Container ref={featuresRef} maxWidth="lg" sx={{ py: 10 }}>
-                <Box className="features-header" sx={{ textAlign: 'center', mb: 8 }}>
+            <Container ref={featuresRef} maxWidth="lg" sx={{py: 10}}>
+                <Box className="features-header" sx={{textAlign: 'center', mb: 8}}>
                     <Typography
                         variant="h2"
                         component="h2"
                         sx={{
                             fontWeight: 900,
                             mb: 3,
-                            fontSize: { xs: '2.5rem', md: '3.5rem' },
+                            fontSize: {xs: '2.5rem', md: '3.5rem'},
                             color: '#000'
                         }}
                     >
                         なぜFeedoなのか？
                     </Typography>
-                    <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+                    <Typography variant="h6" color="text.secondary" sx={{maxWidth: 600, mx: 'auto'}}>
                         従来のフォーム作成ツールの限界を超えた、次世代のソリューション
                     </Typography>
                 </Box>
@@ -515,7 +475,7 @@ export default function Home() {
                             className="feature-card"
                             elevation={0}
                             sx={{
-                                flex: { xs: '1 1 100%', md: '1 1 calc(50% - 16px)' },
+                                flex: {xs: '1 1 100%', md: '1 1 calc(50% - 16px)'},
                                 maxWidth: 500,
                                 border: '1px solid #e0e0e0',
                                 borderRadius: 3,
@@ -539,10 +499,11 @@ export default function Home() {
                                     {feature.icon}
                                 </Box>
                                 <Box>
-                                    <Typography variant="h5" component="h3" sx={{ fontWeight: 700, mb: 2, color: '#000' }}>
+                                    <Typography variant="h5" component="h3"
+                                                sx={{fontWeight: 700, mb: 2, color: '#000'}}>
                                         {feature.title}
                                     </Typography>
-                                    <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                                    <Typography variant="body1" color="text.secondary" sx={{lineHeight: 1.7}}>
                                         {feature.description}
                                     </Typography>
                                 </Box>
@@ -553,21 +514,21 @@ export default function Home() {
             </Container>
 
             {/* お客様の声セクション */}
-            <Box ref={testimonialRef} sx={{ py: 10, backgroundColor: '#000', color: '#fff' }}>
+            <Box ref={testimonialRef} sx={{py: 10, backgroundColor: '#000', color: '#fff'}}>
                 <Container maxWidth="lg">
-                    <Box className="testimonials-header" sx={{ textAlign: 'center', mb: 8 }}>
+                    <Box className="testimonials-header" sx={{textAlign: 'center', mb: 8}}>
                         <Typography
                             variant="h2"
                             component="h2"
                             sx={{
                                 fontWeight: 900,
                                 mb: 3,
-                                fontSize: { xs: '2.5rem', md: '3.5rem' }
+                                fontSize: {xs: '2.5rem', md: '3.5rem'}
                             }}
                         >
                             お客様の声
                         </Typography>
-                        <Typography variant="h6" sx={{ opacity: 0.8, maxWidth: 600, mx: 'auto' }}>
+                        <Typography variant="h6" sx={{opacity: 0.8, maxWidth: 600, mx: 'auto'}}>
                             実際にFeedoを使用している企業様からの評価
                         </Typography>
                     </Box>
@@ -584,7 +545,7 @@ export default function Home() {
                                 className="testimonial-card"
                                 elevation={0}
                                 sx={{
-                                    flex: { xs: '1 1 100%', md: '1 1 calc(50% - 16px)' },
+                                    flex: {xs: '1 1 100%', md: '1 1 calc(50% - 16px)'},
                                     maxWidth: 500,
                                     backgroundColor: '#fff',
                                     color: '#000',
@@ -593,16 +554,16 @@ export default function Home() {
                                 }}
                             >
                                 <Stack spacing={3}>
-                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                    <Box sx={{display: 'flex', gap: 0.5}}>
                                         {[...Array(5)].map((_, i) => (
-                                            <Star key={i} sx={{ fontSize: 20, color: '#000' }} />
+                                            <Star key={i} sx={{fontSize: 20, color: '#000'}}/>
                                         ))}
                                     </Box>
-                                    <Typography variant="body1" sx={{ lineHeight: 1.8, fontStyle: 'italic' }}>
+                                    <Typography variant="body1" sx={{lineHeight: 1.8, fontStyle: 'italic'}}>
                                         "{testimonial.comment}"
                                     </Typography>
                                     <Box>
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                        <Typography variant="subtitle1" sx={{fontWeight: 600}}>
                                             {testimonial.name}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
@@ -617,26 +578,26 @@ export default function Home() {
             </Box>
 
             {/* CTAセクション */}
-            <Container ref={ctaRef} maxWidth="md" sx={{ py: 12, textAlign: 'center' }}>
+            <Container ref={ctaRef} maxWidth="md" sx={{py: 12, textAlign: 'center'}}>
                 <Stack spacing={4}>
                     <Typography
                         className="cta-title"
                         variant="h2"
                         sx={{
                             fontWeight: 900,
-                            fontSize: { xs: '2.5rem', md: '3.5rem' },
+                            fontSize: {xs: '2.5rem', md: '3.5rem'},
                             color: '#000'
                         }}
                     >
                         今すぐ始めよう
                     </Typography>
-                    <Typography className="cta-description" variant="h6" sx={{ opacity: 0.7, maxWidth: 500, mx: 'auto' }}>
+                    <Typography className="cta-description" variant="h6" sx={{opacity: 0.7, maxWidth: 500, mx: 'auto'}}>
                         3分でアカウント作成完了。クレジットカード不要で今すぐお試しいただけます。
                     </Typography>
 
                     <Box sx={{
                         display: 'flex',
-                        flexDirection: { xs: 'column', sm: 'row' },
+                        flexDirection: {xs: 'column', sm: 'row'},
                         gap: 3,
                         justifyContent: 'center',
                         mt: 6
@@ -681,14 +642,14 @@ export default function Home() {
                         </Button>
                     </Box>
 
-                    <Typography variant="body2" sx={{ opacity: 0.5, mt: 4 }}>
+                    <Typography variant="body2" sx={{opacity: 0.5, mt: 4}}>
                         30日間の無料トライアル期間付き
                     </Typography>
                 </Stack>
             </Container>
 
             {/* フッター */}
-            <Box sx={{ backgroundColor: '#f8f8f8', borderTop: '1px solid #e0e0e0', py: 6 }}>
+            <Box sx={{backgroundColor: '#f8f8f8', borderTop: '1px solid #e0e0e0', py: 6}}>
                 <Container maxWidth="lg">
                     <Box sx={{
                         display: 'flex',
@@ -697,44 +658,44 @@ export default function Home() {
                         alignItems: 'flex-start',
                         justifyContent: 'space-between'
                     }}>
-                        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 50%' } }}>
-                            <Typography variant="h4" sx={{ fontWeight: 900, mb: 2, color: '#000' }}>
+                        <Box sx={{flex: {xs: '1 1 100%', md: '1 1 50%'}}}>
+                            <Typography variant="h4" sx={{fontWeight: 900, mb: 2, color: '#000'}}>
                                 Feedo
                             </Typography>
-                            <Typography variant="body1" sx={{ opacity: 0.7, maxWidth: 400 }}>
+                            <Typography variant="body1" sx={{opacity: 0.7, maxWidth: 400}}>
                                 AIの力でフォーム作成を革新する次世代プラットフォーム。
                                 データ収集から分析まで、すべてをシンプルに。
                             </Typography>
                         </Box>
-                        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 50%' } }}>
+                        <Box sx={{flex: {xs: '1 1 100%', md: '1 1 50%'}}}>
                             <Stack
                                 direction="row"
                                 spacing={4}
-                                justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
+                                justifyContent={{xs: 'flex-start', md: 'flex-end'}}
                                 flexWrap="wrap"
                             >
                                 <Box>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#000' }}>
+                                    <Typography variant="subtitle2" sx={{fontWeight: 600, mb: 2, color: '#000'}}>
                                         製品
                                     </Typography>
                                     <Stack spacing={1}>
                                         <Button
                                             color="inherit"
-                                            sx={{ justifyContent: 'flex-start', p: 0, minWidth: 'auto' }}
+                                            sx={{justifyContent: 'flex-start', p: 0, minWidth: 'auto'}}
                                             onClick={() => router.push('/features')}
                                         >
                                             機能一覧
                                         </Button>
                                         <Button
                                             color="inherit"
-                                            sx={{ justifyContent: 'flex-start', p: 0, minWidth: 'auto' }}
+                                            sx={{justifyContent: 'flex-start', p: 0, minWidth: 'auto'}}
                                             onClick={() => router.push('/ai')}
                                         >
                                             AI フォーム作成
                                         </Button>
                                         <Button
                                             color="inherit"
-                                            sx={{ justifyContent: 'flex-start', p: 0, minWidth: 'auto' }}
+                                            sx={{justifyContent: 'flex-start', p: 0, minWidth: 'auto'}}
                                             onClick={() => router.push('/plans')}
                                         >
                                             料金プラン
@@ -742,19 +703,19 @@ export default function Home() {
                                     </Stack>
                                 </Box>
                                 <Box>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#000' }}>
+                                    <Typography variant="subtitle2" sx={{fontWeight: 600, mb: 2, color: '#000'}}>
                                         サポート
                                     </Typography>
                                     <Stack spacing={1}>
                                         <Button
                                             color="inherit"
-                                            sx={{ justifyContent: 'flex-start', p: 0, minWidth: 'auto' }}
+                                            sx={{justifyContent: 'flex-start', p: 0, minWidth: 'auto'}}
                                         >
                                             ヘルプセンター
                                         </Button>
                                         <Button
                                             color="inherit"
-                                            sx={{ justifyContent: 'flex-start', p: 0, minWidth: 'auto' }}
+                                            sx={{justifyContent: 'flex-start', p: 0, minWidth: 'auto'}}
                                         >
                                             お問い合わせ
                                         </Button>
@@ -764,16 +725,16 @@ export default function Home() {
                         </Box>
                     </Box>
 
-                    <Divider sx={{ my: 4 }} />
+                    <Divider sx={{my: 4}}/>
 
                     <Box sx={{
                         display: 'flex',
-                        flexDirection: { xs: 'column', sm: 'row' },
+                        flexDirection: {xs: 'column', sm: 'row'},
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         gap: 2
                     }}>
-                        <Typography variant="body2" sx={{ opacity: 0.6 }}>
+                        <Typography variant="body2" sx={{opacity: 0.6}}>
                             © 2025 Feedo. All rights reserved.
                         </Typography>
                         <Stack direction="row" spacing={3}>
