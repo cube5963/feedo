@@ -247,7 +247,7 @@ export default function Project() {
             console.log("エラーが発生しました");
         } else {
             if (ai) {
-
+                router.push(`/project/ai/${newForm.FormUUID}`);
             } else {
                 setForms(prev => [newForm, ...prev]);
                 router.push(`/project/${newForm.FormUUID}`);

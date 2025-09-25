@@ -13,11 +13,12 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/app/_components/Header';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SendIcon from '@mui/icons-material/Send';
-import { useRouter } from 'next/navigation'
+import {useParams, useRouter} from 'next/navigation'
 import { createPersonalClient } from '@/utils/supabase/personalClient';
 import type { User } from '@supabase/supabase-js';
 
 export default function AI(){
+    const params = useParams()
     const router = useRouter()
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
@@ -63,10 +64,15 @@ export default function AI(){
 
         const url = process.env.NEXT_PUBLIC_AI_API_URL as string + "create";
         const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
+        const form_id = params.id
 
         console.log('送信プロンプト:', send_prompt)
 
         try {
+            const supabase = createPersonalClient();
+
+            await supabase.from('Form').update({"FormName": prompt.title}).eq("FormUUID", params.id).single()
+
             // タイムアウト機能付きのfetch
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒タイムアウト
@@ -77,7 +83,7 @@ export default function AI(){
                     "Content-Type": "application/json",
                     "Accept": "application/json",
                 },
-                body: JSON.stringify({ prompt: send_prompt, userid: userId }),
+                body: JSON.stringify({ prompt: send_prompt, form_id: form_id }),
                 signal: controller.signal,
                 // CORSとキャッシュ設定
                 cache: 'no-cache',
@@ -96,62 +102,12 @@ export default function AI(){
 
             const data = await response.json();
             console.log("AI APIレスポンス詳細:", data);
-            console.log("AIで作成されたフォームID:", data.form_id);
 
-            // フォーム作成後、実際のデータベース状態を確認
-            if (data.form_id) {
-                const supabase = createPersonalClient();
-                const { data: createdForm, error: checkError } = await supabase
-                    .from('Form')
-                    .select('*')
-                    .eq('FormUUID', data.form_id)
-                    .single();
-
-                if (createdForm) {
-                    console.log("AIで作成されたフォームのDB状態:", {
-                        FormUUID: createdForm.FormUUID,
-                        FormName: createdForm.FormName,
-                        CreatedAt: createdForm.CreatedAt,
-                        CreatedAtType: typeof createdForm.CreatedAt,
-                        UpdatedAt: createdForm.UpdatedAt,
-                        UpdatedAtType: typeof createdForm.UpdatedAt,
-                        UserID: createdForm.UserID
-                    });
-
-                    // 作成日または最終更新日が適切でない場合、現在時刻で更新
-                    const now = new Date().toISOString();
-                    const needsUpdate = !createdForm.CreatedAt ||
-                                      !createdForm.UpdatedAt ||
-                                      new Date(createdForm.CreatedAt).getFullYear() < 1990 ||
-                                      new Date(createdForm.UpdatedAt).getFullYear() < 1990;
-
-                    if (needsUpdate) {
-                        console.log("AIフォームの日付を修正中...");
-                        const { error: updateError } = await supabase
-                            .from('Form')
-                            .update({
-                                CreatedAt: createdForm.CreatedAt && new Date(createdForm.CreatedAt).getFullYear() >= 1990
-                                    ? createdForm.CreatedAt
-                                    : now,
-                                UpdatedAt: now  // 最終更新日は現在時刻に設定
-                            })
-                            .eq('FormUUID', data.form_id);
-
-                        if (updateError) {
-                            console.error("日付更新エラー:", updateError);
-                        } else {
-                            console.log("AIフォームの日付を修正しました:", { CreatedAt: now, UpdatedAt: now });
-                        }
-                    }
-                } else {
-                    console.error("作成されたフォームがDBで見つかりません:", checkError);
-                }
-            }
-
-            setSuccess("フォームが正常に作成されました！");
-
-            if(data.form_id != ""){
-                await router.push(`/project/${data.form_id}`)
+            if(data.status_code == 200){
+                setSuccess("フォームが正常に作成されました！");
+                router.push(`/project/${params.id}`)
+            }else{
+                setSuccess("フォームの作成に失敗しました。");
             }
 
         } catch (error) {
