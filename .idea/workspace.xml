@@ -4,11 +4,22 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="feat: add new form and survey components, including navigation and statistics handling" />
+    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="feat: add GitHub Actions workflow and Dockerfile for CI/CD setup">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/actions.yaml.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/actions.yaml.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="GitHub Workflow" />
+        <option value="Dockerfile" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -37,6 +48,9 @@
   &quot;associatedIndex&quot;: 8
 }</component>
   <component name="ProjectId" id="32OujUtQKUfVQ0AaZA92wGdrcxM" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -58,11 +72,16 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
     "ts.external.directory.path": "C:\\Users\\mumei\\Desktop\\work\\cube\\feedo\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\mumei\Desktop\work\cube\feedo" />
+    </key>
+  </component>
   <component name="RunManager" selected="npm.Next.js: サーバーサイド">
     <configuration name="Next.js: クライアントサイドのデバッグ" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
@@ -111,7 +130,23 @@
       <option name="project" value="LOCAL" />
       <updated>1758801072579</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="refactor: update workspace configuration to enhance auto-import settings and task management">
+      <option name="closed" value="true" />
+      <created>1758801212572</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1758801212572</updated>
+    </task>
+    <task id="LOCAL-00003" summary="feat: add GitHub Actions workflow and Dockerfile for CI/CD setup">
+      <option name="closed" value="true" />
+      <created>1758801646341</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1758801646341</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -119,6 +154,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: add new form and survey components, including navigation and statistics handling" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: add new form and survey components, including navigation and statistics handling" />
+    <MESSAGE value="refactor: update workspace configuration to enhance auto-import settings and task management" />
+    <MESSAGE value="feat: add GitHub Actions workflow and Dockerfile for CI/CD setup" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add GitHub Actions workflow and Dockerfile for CI/CD setup" />
   </component>
 </project>
