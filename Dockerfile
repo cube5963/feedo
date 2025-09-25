@@ -6,8 +6,6 @@ COPY package*.json ./
 
 RUN npm install
 
-COPY .github/workflows .
-
 RUN npm run build
 
 ENV NEXT_PUBLIC_SUPABASE_URL = "https://your-supabase-url.supabase.co"
