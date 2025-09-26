@@ -726,17 +726,7 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
         };
     };
 
-    const calculateTextStatistics = (answers: string[]) => {
-        //const validAnswers = answers.filter(answer => typeof answer === 'string' && answer.trim() !== '');
-        /*
-        const validAnswers = answers.filter(answer => answer.trim() !== '');
-        return {
-            type: 'text',
-            total: validAnswers.length,
-            responses: validAnswers
-        };
-        */
-
+    const calculateTextStatistics = (answers: (string | { text?: string })[]) => {
         const validAnswers = answers
             .map(answer => {
                 if(typeof answer === 'object' && answer !== null && answer.text) {
@@ -1162,8 +1152,11 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                                             if (answerData && answerData.Answer) {
                                                 try {
                                                     const parsed = JSON.parse(answerData.Answer);
-                                                    if (typeof parsed.predict === 'number' && (parsed.predict === 0 || parsed.predict === 1 || parsed.predict === 2)) {
-                                                        predictCounts[parsed.predict]++;
+                                                    if (
+                                                        typeof parsed.predict === 'number' &&
+                                                        (parsed.predict === 0 || parsed.predict === 1 || parsed.predict === 2)
+                                                    ) {
+                                                        predictCounts[parsed.predict as 0 | 1 | 2]++;
                                                     }
                                                 } catch (error) {
                                                     console.warn('予測データ解析エラー:', error);
