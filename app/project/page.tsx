@@ -14,7 +14,7 @@ import {
   IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useRouter } from 'next/navigation'; // App Router 用
+import { useParams,useRouter } from 'next/navigation'; // App Router 用
 import { createPersonalClient } from '@/utils/supabase/personalClient'
 import Header from '@/app/_components/Header'
 
@@ -30,9 +30,13 @@ interface FormData {
 }
 
 import { useState, useEffect } from 'react';
+import { getImage, uploadImage } from '@/app/project/[id]/supabaseFunctions';
+import { Form } from 'antd';
 
 export default function Project() {
   const router = useRouter();
+  const params = useParams()
+  const projectId = params.id as string
   const [createOpen, setCreateOpen] = useState(false);
   const [useAi, setUseAi] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,6 +44,28 @@ export default function Project() {
   const [loadingForms, setLoadingForms] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [formImages, setFormImages] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+  const fetchImages = async () => {
+    const imageMap: Record<string, string> = {};
+    for (const form of forms) {
+      const url = await getImage(form.FormUUID);
+      if (url) {
+        console.log(`✅ 画像取得成功: ${form.FormUUID} → ${url}`);
+        imageMap[form.FormUUID] = url;
+      } else {
+        console.log(`⚠️ 画像なし: ${form.FormUUID}`);
+      }
+    }
+    setFormImages(imageMap);
+  };
+
+  if (forms.length > 0) {
+    fetchImages();
+  }
+}, [forms]);
+
 
   // 日付を安全にフォーマットする関数
   const formatSafeDate = (dateString: string | null | undefined, fieldName?: string): string => {
@@ -456,11 +482,13 @@ export default function Project() {
                           onClick={() => handleClick(form.FormUUID)}
                         >
                           <Avatar
+                            src={formImages[form.FormUUID] || undefined}
                             variant="square"
                             sx={{ width: 100, height: 100, bgcolor: 'primary.light' }}
                           >
-                            📝
+                            {!formImages[form.FormUUID] && "📝"}
                           </Avatar>
+
                           <CardContent sx={{ flex: 1 }}>
                             <Typography variant="subtitle1">{form.FormName}</Typography>
                             <Typography variant="body2" color="text.secondary">
