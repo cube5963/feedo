@@ -29,7 +29,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import StatisticsTab from '@/app/project/_components/StatisticsTab'
 import { getImage, uploadImage } from '../[id]/supabaseFunctions';
-
+import {createPersonalClient} from "@/utils/supabase/personalClient"
 
 
 
@@ -285,10 +285,29 @@ export default function ProjectPage() {
 
   // コンポーネントマウント時にフォーム名を取得
   useEffect(() => {
-      if (projectId) {
-          fetchFormName()
-      }
-  }, [projectId])
+        const checkSession = async () => {
+            const supabase = createPersonalClient();
+            const {data: sessionData, error: sessionError} = await supabase.auth.getSession();
+
+            if (sessionError) {
+                router.push('/account/signin');
+                return;
+            }
+
+            const currentUser = sessionData?.session?.user;
+            if (!currentUser) {
+                router.push('/account/signin');
+                return;
+            }
+
+            if (projectId) {
+                fetchFormName();
+                fetchFormMessage();
+            }
+        };
+        checkSession();
+    }, [projectId]);
+
 
 
 
