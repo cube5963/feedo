@@ -503,7 +503,7 @@ export default function Project() {
                               color="error"
                               onClick={(e) => handleDeleteForm(form.FormUUID, form.FormName, e)}
                               disabled={loading}
-                              title="このフォームを削除"
+                              title="このフォームを削除♡"
                               sx={{ 
                                 '&:hover': { bgcolor: 'error.light', color: 'white' }
                               }}
@@ -562,3 +562,6 @@ export default function Project() {
     </Box>
   );
 }
+
+
+
