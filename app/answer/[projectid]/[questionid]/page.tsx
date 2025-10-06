@@ -115,26 +115,8 @@ export default function AnswerQuestionPage() {
 
             let sectionsData: Section[] | null = null;
 
-            if(process.env.NEXT_PUBLIC_USE_REDIS === "true"){
-                const redisRes = await fetch(`/api/sections/redis?projectId=${projectId}`);
-                const redisJson = await redisRes.json();
-                if (redisJson.GET) {
-                    //console.log("found data in redis")
-                    sectionsData = JSON.parse(redisJson.GET);
-                } else {
-                    //console.log("not found data in redis")
-                    sectionsData = await fetchSections(projectId);
-
-                    await fetch('/api/sections/redis', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({projectId, sectionsData}),
-                    });
-                }
-            } else {
-                sectionsData = await fetchSections(projectId);
-            }
-
+            sectionsData = await fetchSections(projectId);
+            
             setSections(sectionsData || []);
 
             // 現在の質問を特定
