@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="fix: Update branch references from 'main' to 'master' in workflow configuration files" />
+    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -124,7 +126,7 @@
       <workItem from="1757304353073" duration="31000" />
       <workItem from="1757304397418" duration="27000" />
       <workItem from="1757304440804" duration="36000" />
-      <workItem from="1759720409293" duration="2059000" />
+      <workItem from="1759720409293" duration="3155000" />
     </task>
     <task id="LOCAL-00001" summary="feat: add new form and survey components, including navigation and statistics handling">
       <option name="closed" value="true" />
@@ -214,7 +216,15 @@
       <option name="project" value="LOCAL" />
       <updated>1759722639362</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management">
+      <option name="closed" value="true" />
+      <created>1759723481981</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1759723481981</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -231,7 +241,8 @@
     <MESSAGE value="fix: downgrade docker/login-action version from v2 to v1 in GitHub Actions workflow" />
     <MESSAGE value="feat: Add GitHub Actions workflow for building and pushing Docker images" />
     <MESSAGE value="fix: Update branch references from 'main' to 'master' in workflow configuration files" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix: Update branch references from 'main' to 'master' in workflow configuration files" />
+    <MESSAGE value="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management" />
   </component>
   <component name="VgoProject">
     <integration-enabled>false</integration-enabled>
