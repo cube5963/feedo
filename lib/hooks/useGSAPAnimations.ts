@@ -232,11 +232,10 @@ export const useParallaxAnimation = (ref: RefObject<HTMLElement>, options?: {
 };
 
 // ホバーアニメーション
-export const useHoverAnimation = (ref: RefObject<HTMLElement>, options?: {
-  scale?: number;
-  duration?: number;
-  ease?: string;
-}) => {
+export function useHoverAnimation(
+    ref: React.RefObject<HTMLElement | null>,
+    options: { scale: number; duration?: number; ease?: string }
+) {
   useEffect(() => {
     if (!ref.current) return;
 

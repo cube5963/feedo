@@ -3,12 +3,13 @@
 import React, {useState, useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import {Box, Typography, Alert, CircularProgress} from '@mui/material';
-import {createAnswerClient} from '@/utils/supabase/answerClient';
+import {createAnonClient} from '@/utils/supabase/anonClient';
 import {Section} from '@/app/_components/forms/types';
 import QuestionComponent from '@/app/preview/_components/QuestionComponent';
 import ProgressBar from '@/app/preview/_components/ProgressBar';
 import AnswerNavigationButtons from '@/app/answer/_components/AnswerNavigationButtons';
 import Header from '@/app/_components/Header';
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 interface FormData {
     FormUUID: string;
@@ -58,18 +59,52 @@ export default function AnswerQuestionPage() {
         }
     }, [currentIndex]);
 
+    const getCookie = async (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            const cookieValue = parts.pop();
+            if (cookieValue) {
+                return cookieValue.split(';').shift();
+            }
+        }
+        return null;
+    }
+
     const fetchData = async () => {
         try {
             setLoading(true);
-            const supabase = createAnswerClient(); // 回答専用クライアント使用
+            const supabase = createAnonClient() // 回答専用クライアント使用
 
             // フォーム情報を取得
             const {data: formData, error: formError} = await supabase
                 .from('Form')
-                .select('FormUUID, FormName')
+                .select('FormUUID, FormName, singleResponse')
                 .eq('FormUUID', projectId)
                 .eq('Delete', false)
                 .single();
+
+            if (formData && formData.singleResponse === true) {
+                const fpPromise = FingerprintJS.load();
+                (async () => {
+                    const fp = await fpPromise;
+                    const result = await fp.get();
+                    const visitorId = result.visitorId;
+
+                    const res = await fetch(`/api/fingerprint?form_id=${projectId}&fingerprint=${visitorId}`);
+                    const data = await res.json();
+                    if (data.error) throw data.error;
+
+                    if(data.result === true){
+                        const answerUserFromCookie = await getCookie('answer_user');
+                        const answerUserFromLocalStorage = localStorage.getItem('answer_user');
+
+                        if(!!(answerUserFromCookie || answerUserFromLocalStorage)){
+                            setError('すでに回答済みです')
+                        }
+                    }
+                })();
+            }
 
             if (formError) {
                 setError('フォームが見つかりません');
@@ -78,17 +113,26 @@ export default function AnswerQuestionPage() {
 
             setFormData(formData);
 
-            // セクション一覧を取得
-            const {data: sectionsData, error: sectionsError} = await supabase
-                .from('Section')
-                .select('*')
-                .eq('FormUUID', projectId)
-                .eq('Delete', false)
-                .order('SectionOrder', {ascending: true});
+            let sectionsData: Section[] | null = null;
 
-            if (sectionsError) {
-                setError('質問の取得に失敗しました');
-                return;
+            if(process.env.NEXT_PUBLIC_USE_REDIS === "true"){
+                const redisRes = await fetch(`/api/sections/redis?projectId=${projectId}`);
+                const redisJson = await redisRes.json();
+                if (redisJson.GET) {
+                    //console.log("found data in redis")
+                    sectionsData = JSON.parse(redisJson.GET);
+                } else {
+                    //console.log("not found data in redis")
+                    sectionsData = await fetchSections(projectId);
+
+                    await fetch('/api/sections/redis', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({projectId, sectionsData}),
+                    });
+                }
+            } else {
+                sectionsData = await fetchSections(projectId);
             }
 
             setSections(sectionsData || []);
@@ -113,7 +157,6 @@ export default function AnswerQuestionPage() {
             setLoading(false);
         }
     };
-
     const handleAnswer = (answer: any) => {
         if (currentSection) {
             setAnswers(prev => ({
@@ -123,20 +166,30 @@ export default function AnswerQuestionPage() {
         }
     };
 
+    const fetchSections = async (form_id: string) => {
+        const res = await fetch(`/api/sections?form_id=${form_id}`);
+        const result = await res.json();
+        if (result.error) throw result.error;
+        return result.data;
+    }
+
     // 常に新規回答をinsertする
     const saveAnswer = async (sectionUUID: string, answerData: any) => {
         try {
-            const supabase = createAnswerClient(); // 回答専用クライアント使用
-            const answerPayload = {
-                FormUUID: projectId,
-                SectionUUID: sectionUUID,
-                AnswerUUID: answerUUID,
-                Answer: JSON.stringify({ text: answerData, predict: "" })
-            };
-            const { data, error } = await supabase
-                .from('Answer')
-                .insert([answerPayload])
-                .select();
+            const res = await fetch('/api/answer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    form_id: projectId,
+                    section_id: sectionUUID,
+                    answer_id: answerUUID,
+                    answer_data: JSON.stringify({text: answerData, predict: ""})
+                })
+            });
+            const result = await res.json();
+            const data = result.data;
+            const error = result.error;
+
             //console.log(data);
             if (error) {
                 console.error('回答保存エラー:', JSON.stringify(error));
