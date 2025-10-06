@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management">
+    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/actions.yaml.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/actions.yaml.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -126,7 +128,7 @@
       <workItem from="1757304353073" duration="31000" />
       <workItem from="1757304397418" duration="27000" />
       <workItem from="1757304440804" duration="36000" />
-      <workItem from="1759720409293" duration="3155000" />
+      <workItem from="1759720409293" duration="3931000" />
     </task>
     <task id="LOCAL-00001" summary="feat: add new form and survey components, including navigation and statistics handling">
       <option name="closed" value="true" />
@@ -224,7 +226,23 @@
       <option name="project" value="LOCAL" />
       <updated>1759723481981</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="feat: Update Dockerfile to use ARG for environment variables and modify workspace.xml for task management">
+      <option name="closed" value="true" />
+      <created>1759724469014</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1759724469014</updated>
+    </task>
+    <task id="LOCAL-00014" summary="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations">
+      <option name="closed" value="true" />
+      <created>1759724687548</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1759724687548</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -242,7 +260,9 @@
     <MESSAGE value="feat: Add GitHub Actions workflow for building and pushing Docker images" />
     <MESSAGE value="fix: Update branch references from 'main' to 'master' in workflow configuration files" />
     <MESSAGE value="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management" />
+    <MESSAGE value="feat: Update Dockerfile to use ARG for environment variables and modify workspace.xml for task management" />
+    <MESSAGE value="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations" />
   </component>
   <component name="VgoProject">
     <integration-enabled>false</integration-enabled>
