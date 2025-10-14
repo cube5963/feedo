@@ -1,22 +1,20 @@
 "use client"
 import {useParams, useRouter} from 'next/navigation'
-import {useState, useEffect, useRef} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import FormComponent from '@/app/_components/form'
 import {
-    Box,
-    Typography,
-    Paper,
-    TextField,
-    Container,
     Alert,
-    Fade,
+    Avatar,
+    Box,
     Button,
-    Tabs,
-    Tab,
     Divider,
     FormControl,
     FormLabel,
-    Avatar
+    Paper,
+    Tab,
+    Tabs,
+    TextField,
+    Typography
 } from '@mui/material'
 import {createClient} from '@/utils/supabase/client'
 import VisibilityIcon from '@mui/icons-material/Visibility'
@@ -37,11 +35,13 @@ export default function ProjectPage() {
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState("")
     const [currentTab, setCurrentTab] = useState(0) // タブの状態を追加
+
+    const supabase = createClient()
+
     // フォーム終了メッセージを取得する関数
     const fetchFormMessage = async () => {
         try {
-            const supabase = createClient()
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('Form')
                 .select('FormMessage')
                 .eq('FormUUID', projectId)
@@ -62,10 +62,9 @@ export default function ProjectPage() {
     const updateFormMessage = async (newFormMessage: string) => {
         setLoading(true)
         try {
-            const supabase = createClient()
-            const { error } = await supabase
+            const {error} = await supabase
                 .from('Form')
-                .update({ FormMessage: newFormMessage, UpdatedAt: new Date().toISOString() })
+                .update({FormMessage: newFormMessage, UpdatedAt: new Date().toISOString()})
                 .eq('FormUUID', projectId)
                 .eq('Delete', false)
 
@@ -95,8 +94,6 @@ export default function ProjectPage() {
     // アンケート回答ページに移動する関数
     const handleAnswer = async () => {
         try {
-            const supabase = createClient()
-
             // 最初の質問を取得
             const {data: sections, error} = await supabase
                 .from('Section')
@@ -122,8 +119,6 @@ export default function ProjectPage() {
     // プレビューページに移動する関数
     const handlePreview = async () => {
         try {
-            const supabase = createClient()
-
             // 最初の質問を取得
             const {data: sections, error} = await supabase
                 .from('Section')
@@ -150,7 +145,6 @@ export default function ProjectPage() {
     // フォーム名を取得する関数
     const fetchFormName = async () => {
         try {
-            const supabase = createClient()
             const {data, error} = await supabase
                 .from('Form')
                 .select('FormName')
@@ -177,7 +171,6 @@ export default function ProjectPage() {
 
         setLoading(true)
         try {
-            const supabase = createClient()
             const {error} = await supabase
                 .from('Form')
                 .update({FormName: newFormName, UpdatedAt: new Date().toISOString()})
@@ -218,7 +211,9 @@ export default function ProjectPage() {
 
         const img = new window.Image()
         img.src = URL.createObjectURL(file)
-        await new Promise((resolve) => { img.onload = resolve })
+        await new Promise((resolve) => {
+            img.onload = resolve
+        })
 
         const maxSide = Math.max(img.width, img.height)
         const targetSize = getNearestSize(maxSide)
@@ -243,7 +238,6 @@ export default function ProjectPage() {
             canvas.toBlob((b) => resolve(b!), file.type)
         )
 
-        const supabase = createClient()
         const filePath = `feedo/${projectId}/${file.name}`
 
         const {error} = await supabase.storage
@@ -274,7 +268,6 @@ export default function ProjectPage() {
 
     useEffect(() => {
         const fetchImage = async () => {
-            const supabase = createClient()
             // 画像ファイル名が分かっている場合は指定、なければリスト取得
             const {data, error} = await supabase.storage
                 .from('feedo')
@@ -350,7 +343,6 @@ export default function ProjectPage() {
                         startIcon={<QuestionAnswerIcon/>}
                         onClick={async () => {
                             try {
-                                const supabase = createClient()
 
                                 // 最初の質問を取得
                                 const {data: sections, error} = await supabase
@@ -393,7 +385,7 @@ export default function ProjectPage() {
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     <FormControl component="fieldset">
                         <FormLabel style={{fontWeight: 'bold', color: 'black'}}>アンケート終了後のメッセージ</FormLabel>
-                        <Box sx={{ mt: 1 }}>
+                        <Box sx={{mt: 1}}>
                             <Typography variant="body2" color="text.secondary">
                                 アンケートが終了したときに表示されるメッセージを設定できます。
                             </Typography>
@@ -404,16 +396,16 @@ export default function ProjectPage() {
                                 minRows={2}
                                 maxRows={4}
                                 placeholder="例: ご協力ありがとうございました！"
-                                sx={{ mt: 1 }}
+                                sx={{mt: 1}}
                                 value={formMessage}
                                 onChange={(e) => setFormMessage(e.target.value)}
                                 onBlur={() => updateFormMessage(formMessage)}
-                                inputProps={{ maxLength: 200 }}
+                                inputProps={{maxLength: 200}}
                                 disabled={loading}
                             />
                         </Box>
                     </FormControl>
-                    
+
                     <FormControl component="fieldset">
                         <FormLabel component="legend">回答の公開設定</FormLabel>
                         <Box sx={{mt: 1}}>
@@ -491,7 +483,6 @@ export default function ProjectPage() {
                                 onClick={async () => {
                                     if (!imageUrl) return
                                     setUploading(true)
-                                    const supabase = createClient()
                                     // 画像ファイル名を取得
                                     const {data} = await supabase.storage
                                         .from('feedo')

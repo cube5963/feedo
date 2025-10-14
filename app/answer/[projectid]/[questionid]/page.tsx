@@ -86,7 +86,7 @@ export default function AnswerQuestionPage() {
 
             if (formData && formData.singleResponse === true) {
                 const fpPromise = FingerprintJS.load();
-                (async () => {
+                await (async () => {
                     const fp = await fpPromise;
                     const result = await fp.get();
                     const visitorId = result.visitorId;
@@ -95,11 +95,11 @@ export default function AnswerQuestionPage() {
                     const data = await res.json();
                     if (data.error) throw data.error;
 
-                    if(data.result === true){
+                    if (data.result === true) {
                         const answerUserFromCookie = await getCookie('answer_user');
                         const answerUserFromLocalStorage = localStorage.getItem('answer_user');
 
-                        if(!!(answerUserFromCookie || answerUserFromLocalStorage)){
+                        if (!!(answerUserFromCookie || answerUserFromLocalStorage)) {
                             setError('すでに回答済みです')
                         }
                     }

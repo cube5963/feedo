@@ -15,10 +15,12 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useRouter} from 'next/navigation'; // App Router 用
-import {createPersonalClient} from '@/utils/supabase/personalClient'
 import Header from '@/app/_components/Header'
 import {useEffect, useState} from 'react';
 import {createForm} from '@/utils/feedo/form/create';
+import {fixAIFormDates, formatSafeDate} from "@/utils/feedo/fixTime";
+import {deleteForm} from "@/utils/feedo/form/delete";
+import {SupabaseAuthClient} from "@/utils/supabase/user";
 
 // Supabaseフォーム型
 interface FormData {
@@ -39,110 +41,19 @@ export default function Project() {
     const [forms, setForms] = useState<FormData[]>([]);
     const [loadingForms, setLoadingForms] = useState(true);
     const [user, setUser] = useState<any>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-    // 日付を安全にフォーマットする関数
-    const formatSafeDate = (dateString: string | null | undefined, fieldName?: string): string => {
-        if (!dateString) {
-            console.log(`${fieldName || 'Date'}フィールドが空またはnull:`, dateString);
-            return '不明';
-        }
-
-        try {
-            // Unix timestamp（秒）の場合は*1000してミリ秒に変換
-            let date: Date;
-
-            // 数値の場合（Unix timestamp）
-            if (typeof dateString === 'number' || /^\d+$/.test(String(dateString))) {
-                const timestamp = Number(dateString);
-                // 秒単位のUnix timestampの場合（桁数が少ない）
-                if (timestamp < 10000000000) {
-                    date = new Date(timestamp * 1000);
-                    console.log(`${fieldName || 'Date'} Unix秒timestamp検出:`, timestamp, '→', date);
-                } else {
-                    date = new Date(timestamp);
-                    console.log(`${fieldName || 'Date'} Unixミリ秒timestamp検出:`, timestamp, '→', date);
-                }
-            } else {
-                date = new Date(dateString);
-                console.log(`${fieldName || 'Date'} 文字列日付:`, dateString, '→', date);
-            }
-
-            // 無効な日付や1970年代（Unix timestamp 0近辺）をチェック
-            if (isNaN(date.getTime()) || date.getFullYear() < 1990) {
-                console.warn(`${fieldName || 'Date'} 無効な日付:`, dateString, '→', date);
-                return '不明';
-            }
-
-            return date.toLocaleDateString('ja-JP');
-        } catch (error) {
-            console.error(`${fieldName || 'Date'} フォーマットエラー:`, error, dateString);
-            return '不明';
-        }
-    };
-
-    // AIフォームの日付を修正する関数
-    const fixAIFormDates = async (formsToFix: any[]) => {
-        if (!user || formsToFix.length === 0) return;
-
-        const supabase = createPersonalClient();
-        const now = new Date().toISOString();
-
-        console.log('AIフォームの日付修正を開始...');
-
-        for (const form of formsToFix) {
-            try {
-                const {error: updateError} = await supabase
-                    .from('Form')
-                    .update({
-                        CreatedAt: form.CreatedAt && new Date(form.CreatedAt).getFullYear() >= 1990
-                            ? form.CreatedAt
-                            : now,
-                        UpdatedAt: now  // 最終更新日は現在時刻に設定
-                    })
-                    .eq('FormUUID', form.FormUUID)
-                    .eq('UserID', user.id); // セキュリティのため所有者チェック
-
-                if (updateError) {
-                    console.error(`フォーム ${form.FormName} の日付更新エラー:`, updateError);
-                } else {
-                    console.log(`フォーム ${form.FormName} の日付を修正しました`);
-                }
-            } catch (error) {
-                console.error(`フォーム ${form.FormName} の修正中にエラー:`, error);
-            }
-        }
-
-        // 修正後にフォーム一覧を再取得
-        console.log('日付修正完了。フォーム一覧を再読み込み中...');
-        window.location.reload();
-    };
+    const {supabase, isAuth} = SupabaseAuthClient();
 
     // ログインユーザーの認証状態確認とフォーム取得
     useEffect(() => {
+        if (!supabase) return;
+
         const checkUserAndFetchForms = async () => {
             try {
-                const supabase = createPersonalClient(); // 個人用クライアント使用
-
-                // 現在のセッション確認
-                const {data: sessionData, error: sessionError} = await supabase.auth.getSession();
-
-                if (sessionError) {
-                    console.error('セッション取得エラー:', sessionError);
-                    router.push('/account/signin');
-                    return;
-                }
-
-                const currentUser = sessionData?.session?.user;
-                if (!currentUser) {
+                if (isAuth === false) {
                     console.log('未認証のユーザー - サインインページにリダイレクト');
                     router.push('/account/signin');
                     return;
                 }
-
-                setUser(currentUser);
-                setIsAuthenticated(true);
-                console.log('ログイン中のユーザー:', currentUser.id, currentUser.email);
 
                 // ログインユーザーのフォームのみを取得（個人用クライアント使用）
                 const {data, error} = await supabase
@@ -150,6 +61,7 @@ export default function Project() {
                     .select('*')
                     .eq('Delete', false)
                     .order('CreatedAt', {ascending: false});
+
 
                 if (error) {
                     console.error('フォーム取得エラー:', error);
@@ -162,14 +74,19 @@ export default function Project() {
                         setForms([]);
                     }
                 } else {
-                    console.log(`ユーザー ${currentUser.email} のフォーム:`, data?.length || 0, '件');
-
                     // 日付の問題をデバッグするためのログ出力
                     if (data && data.length > 0) {
                         console.log('フォームの日付情報をチェック:');
                         const formsNeedingDateFix: any[] = [];
 
-                        data.forEach(form => {
+                        data.forEach((form: {
+                            FormName: string | string[];
+                            ImgID: string;
+                            FormUUID: any;
+                            CreatedAt: string | number | Date;
+                            UpdatedAt: string | number | Date;
+                            UserID: any;
+                        }) => {
                             const isAICreated = form.FormName?.includes('AI') || form.ImgID === '' || !form.ImgID;
                             console.log(`フォーム ${form.FormName} ${isAICreated ? '(AI作成可能性)' : '(通常作成)'}:`, {
                                 FormUUID: form.FormUUID,
@@ -200,14 +117,12 @@ export default function Project() {
 
                             // 自動修正を実行（必要に応じてコメントアウト解除）
                             console.log('AIフォームの日付を自動修正します...');
-                            fixAIFormDates(formsNeedingDateFix);
+                            await fixAIFormDates(formsNeedingDateFix, supabase);
                         }
                     }
-
-                    // 念のため、JavaScriptレベルでもUserIDが存在するもののみフィルタリング
-                    const validForms = (data || []).filter((form: FormData) => form.UserID === currentUser.id);
-                    console.log('最終的に表示するフォーム:', validForms.length, '件');
-                    setForms(validForms);
+                    console.log(data)
+                    setForms(data);
+                    console.log(forms)
                 }
             } catch (error) {
                 console.error('ユーザー認証エラー:', error);
@@ -218,7 +133,8 @@ export default function Project() {
         };
 
         checkUserAndFetchForms();
-    }, [router]);
+    }, [router, supabase]);
+
 
     const handleClick = (formId: string) => {
         // Supabaseフォームのページに遷移
@@ -264,6 +180,8 @@ export default function Project() {
             return;
         }
 
+        setLoading(true)
+
         if (!confirm(`「${formName}」を削除しますか？\nこのフォーム内のすべてのセクションも同時に削除されます。`)) {
             return;
         }
@@ -271,59 +189,11 @@ export default function Project() {
         setLoading(true);
 
         try {
-            const supabase = createPersonalClient(); // 個人用クライアント使用
 
-            // フォームの所有者確認（念のため）
-            const {data: formCheck, error: checkError} = await supabase
-                .from('Form')
-                .select('UserID')
-                .eq('FormUUID', formId)
-                .single();
+            if (await deleteForm(formId, supabase))
+                setForms(prev => prev.filter(form => form.FormUUID !== formId));
 
-            if (checkError) {
-                console.error('フォーム所有者確認エラー:', checkError);
-                alert('フォームの削除に失敗しました（所有者確認エラー）');
-                setLoading(false);
-                return;
-            }
-
-            if (formCheck?.UserID && formCheck.UserID !== user.id) {
-                alert('このフォームを削除する権限がありません');
-                setLoading(false);
-                return;
-            }
-
-            // 関連するSectionを論理削除
-            const {error: sectionError} = await supabase
-                .from('Section')
-                .update({Delete: true, UpdatedAt: new Date().toISOString()})
-                .eq('FormUUID', formId)
-                .eq('Delete', false);
-
-            if (sectionError) {
-                console.error('セクション削除エラー:', sectionError);
-                alert(`セクションの削除に失敗しました: ${sectionError.message}`);
-                setLoading(false);
-                return;
-            }
-
-            // Formを論理削除（UserIDでさらにフィルタリング）
-            const {error: deleteError} = await supabase
-                .from('Form')
-                .update({Delete: true})
-                .eq('FormUUID', formId)
-                .eq('Delete', false);
-
-            if (deleteError) {
-                console.error('フォーム削除エラー:', deleteError);
-                alert(`フォームの削除に失敗しました: ${deleteError.message}`);
-                setLoading(false);
-                return;
-            }
-
-            // ローカルのフォームリストから削除
-            setForms(prev => prev.filter(form => form.FormUUID !== formId));
-            console.log(`フォーム ${formName} (ID: ${formId}) をユーザー ${user.email} が削除しました`);
+            setLoading(false)
 
         } catch (error: any) {
             console.error('フォーム削除エラー詳細:', error);
@@ -344,7 +214,7 @@ export default function Project() {
 
             <Box sx={{maxWidth: 500, margin: 'auto', pt: 10, pb: 4, px: 2}}>
                 {/* 認証確認中の表示 */}
-                {!isAuthenticated && loadingForms && (
+                {!isAuth && loadingForms && (
                     <Box sx={{textAlign: 'center', py: 4}}>
                         <Typography variant="body2" color="text.secondary">
                             認証情報を確認中...
@@ -353,7 +223,7 @@ export default function Project() {
                 )}
 
                 {/* 認証済みの場合のコンテンツ */}
-                {isAuthenticated && (
+                {isAuth && (
                     <>
                         {/* ユーザー情報表示 */}
                         {user && (
@@ -365,7 +235,7 @@ export default function Project() {
                         )}
 
                         {/* 新規作成 */}
-                        <Box sx={{display: 'flex', alignItems: 'center', mb: 3}}>
+                        <Box sx={{display: 'flex', alignItems: 'center', mb: 3, mt:3}}>
                             <Button
                                 variant="outlined"
                                 sx={{width: 100, height: 100}}
