@@ -53,10 +53,12 @@ export default function SignIn() {
         setError(null);
         
         const supabase = createClient();
+        const res = await fetch('/api/env?data=REDIRECT_URL');
+        const result = await res.json();
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL,
+                redirectTo: result.data,
             },
         });
 

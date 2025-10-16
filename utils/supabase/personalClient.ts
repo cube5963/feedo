@@ -1,11 +1,17 @@
 'use client';
 
 import { createBrowserClient } from "@supabase/ssr";
+const res = await fetch('/api/env?data=URL');
+const result = await res.json();
+const supabaseUrl = result.data;
 
+const res2 = await fetch('/api/env?data=ANON_KEY');
+const result2 = await res2.json();
+const supabaseAnonKey = result2.data;
 // 個人用クライアント（認証済みユーザー専用）
 // フォームの作成・管理に使用
 export const createPersonalClient = () =>
   createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
   );

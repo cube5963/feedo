@@ -171,7 +171,8 @@ export default function AnswerQuestionPage() {
             const result = await res.json();
             const data = result.data;
             const error = result.error;
-
+            const env_res = await fetch('/api/env?data=AI_API_URL');
+            const env_result = await env_res.json();
             //console.log(data);
             if (error) {
                 console.error('回答保存エラー:', JSON.stringify(error));
@@ -179,7 +180,7 @@ export default function AnswerQuestionPage() {
                 const section = sections.find(s => s.SectionUUID === sectionUUID);
                 const answerSectionUUID = data[0].AnswerSectionUUID;
                 if (section && section.SectionType === "text") {
-                    await fetch(process.env.NEXT_PUBLIC_AI_API_URL as string + "emotions", {
+                    await fetch(env_result.data as string + "emotions", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
