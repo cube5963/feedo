@@ -30,7 +30,7 @@ interface FormData {
     CreatedAt: string;
     UpdatedAt: string;
     Delete: boolean;
-    UserID?: string; // ユーザーIDフィールド（CreatedByからUserIDに変更）
+    UserID?: string;
 }
 
 export default function Project() {
@@ -40,8 +40,7 @@ export default function Project() {
     const [loading, setLoading] = useState(false);
     const [forms, setForms] = useState<FormData[]>([]);
     const [loadingForms, setLoadingForms] = useState(true);
-    const [user, setUser] = useState<any>(null);
-    const {supabase, isAuth} = SupabaseAuthClient();
+    const {supabase, isAuth, user　} = SupabaseAuthClient();
 
     // ログインユーザーの認証状態確認とフォーム取得
     useEffect(() => {
@@ -49,13 +48,12 @@ export default function Project() {
 
         const checkUserAndFetchForms = async () => {
             try {
-                if (isAuth === false) {
-                    console.log('未認証のユーザー - サインインページにリダイレクト');
+                if (!isAuth || !user || !supabase) {
                     router.push('/account/signin');
                     return;
                 }
 
-                // ログインユーザーのフォームのみを取得（個人用クライアント使用）
+                // ログインユーザーのフォームのみを取得
                 const {data, error} = await supabase
                     .from('Form')
                     .select('*')
@@ -64,11 +62,8 @@ export default function Project() {
 
 
                 if (error) {
-                    console.error('フォーム取得エラー:', error);
-
                     // UserIDカラムが存在しない場合は空のリストを表示
                     if (error.code === '42703' || error.message?.includes('UserID')) {
-                        console.log('UserIDカラムが存在しません。ユーザー情報が必須のため、空のリストを表示します。');
                         setForms([]);
                     } else {
                         setForms([]);
@@ -76,7 +71,6 @@ export default function Project() {
                 } else {
                     // 日付の問題をデバッグするためのログ出力
                     if (data && data.length > 0) {
-                        console.log('フォームの日付情報をチェック:');
                         const formsNeedingDateFix: any[] = [];
 
                         data.forEach((form: {
@@ -112,20 +106,12 @@ export default function Project() {
 
                         // 問題のあるAIフォームがある場合、自動修正を提案
                         if (formsNeedingDateFix.length > 0) {
-                            console.log(`${formsNeedingDateFix.length}個のAIフォームで日付の問題を検出しました:`,
-                                formsNeedingDateFix.map(f => f.FormName));
-
-                            // 自動修正を実行（必要に応じてコメントアウト解除）
-                            console.log('AIフォームの日付を自動修正します...');
                             await fixAIFormDates(formsNeedingDateFix, supabase);
                         }
                     }
-                    console.log(data)
                     setForms(data);
-                    console.log(forms)
                 }
             } catch (error) {
-                console.error('ユーザー認証エラー:', error);
                 router.push('/account/signin');
             } finally {
                 setLoadingForms(false);
@@ -148,15 +134,13 @@ export default function Project() {
 
     // 新規フォーム作成関数
     const handleCreateNewForm = async (ai: boolean) => {
-        if (!user) {
-            alert('ログインが必要です');
+        if (!isAuth　|| !supabase) {
             router.push('/account/signin');
             return;
         }
 
         setLoading(true);
-
-        const newForm = await createForm(user);
+        const newForm = await createForm(user, supabase);
         setLoading(false);
 
         if (newForm == null) {
@@ -171,12 +155,13 @@ export default function Project() {
         }
     };
 
-    // フォーム削除関数（ログインユーザーのフォームのみ削除可能）
+    // フォーム削除関数
     const handleDeleteForm = async (formId: string, formName: string, event: React.MouseEvent) => {
         event.stopPropagation();
 
-        if (!user) {
-            alert('ログインが必要です');
+        if (!isAuth) {
+            console.log('未認証のユーザー - サインインページにリダイレクト');
+            router.push('/account/signin');
             return;
         }
 
@@ -196,7 +181,6 @@ export default function Project() {
             setLoading(false)
 
         } catch (error: any) {
-            console.error('フォーム削除エラー詳細:', error);
             alert(`フォームの削除に失敗しました: ${error?.message || 'Unknown error'}`);
         } finally {
             setLoading(false);
@@ -214,16 +198,16 @@ export default function Project() {
 
             <Box sx={{maxWidth: 500, margin: 'auto', pt: 10, pb: 4, px: 2}}>
                 {/* 認証確認中の表示 */}
-                {!isAuth && loadingForms && (
+                {(!isAuth && loadingForms) ? (
                     <Box sx={{textAlign: 'center', py: 4}}>
                         <Typography variant="body2" color="text.secondary">
                             認証情報を確認中...
                         </Typography>
                     </Box>
-                )}
+                ) : null}
 
                 {/* 認証済みの場合のコンテンツ */}
-                {isAuth && (
+                {isAuth ? (
                     <>
                         {/* ユーザー情報表示 */}
                         {user && (
@@ -235,7 +219,7 @@ export default function Project() {
                         )}
 
                         {/* 新規作成 */}
-                        <Box sx={{display: 'flex', alignItems: 'center', mb: 3, mt:3}}>
+                        <Box sx={{display: 'flex', alignItems: 'center', mb: 3, mt: 3}}>
                             <Button
                                 variant="outlined"
                                 sx={{width: 100, height: 100}}
@@ -326,7 +310,7 @@ export default function Project() {
                             </>
                         )}
                     </>
-                )}
+                ) : null}
             </Box>
             <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
                 <DialogTitle>新規作成</DialogTitle>

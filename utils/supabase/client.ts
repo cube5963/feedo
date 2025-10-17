@@ -2,11 +2,11 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 
-const res = await fetch('/api/env?data=URL');
+const res = await fetch('/api/env?type=URL');
 const result = await res.json();
 const supabaseUrl = result.data;
 
-const res2 = await fetch('/api/env?data=ANON_KEY');
+const res2 = await fetch('/api/env?type=ANON_KEY');
 const result2 = await res2.json();
 const supabaseAnonKey = result2.data;
 
