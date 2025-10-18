@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {useRouter} from 'next/navigation';
-import {Box, IconButton, Typography, AppBar, Toolbar, Button, Stack} from '@mui/material';
+import {AppBar, Box, Button, IconButton, Stack, Toolbar, Typography} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeIcon from '@mui/icons-material/Home';
 
@@ -170,25 +170,6 @@ export default function Header({
                         >
                             プラン
                         </Button>
-                        {/*
-                                                <Button
-                            onClick={() => router.push('/project')}
-                            sx={{
-                                color: '#666',
-                                fontWeight: 500,
-                                textTransform: 'none',
-                                px: 2,
-                                py: 1,
-                                borderRadius: 2,
-                                '&:hover': {
-                                    color: '#000',
-                                    backgroundColor: '#f5f5f5'
-                                }
-                            }}
-                        >
-                            ダッシュボード
-                        </Button>
-                        */}
                     </Stack>
                 )}
 
@@ -198,40 +179,40 @@ export default function Header({
                         <>
                             {showActions && (
                                 <>
-                                <Button
-                                    onClick={() => router.push('/account/signup')}
-                                    sx={{
-                                        backgroundColor: '#000',
-                                        color: '#fff',
-                                        fontWeight: 600,
-                                        textTransform: 'none',
-                                        px: 3,
-                                        py: 1,
-                                        borderRadius: 2,
-                                        '&:hover': {
-                                            backgroundColor: '#333'
-                                        }
-                                    }}
-                                >
-                                    始める
-                                </Button>
-                                <Button
-                                    onClick={() => router.push('/account/signin')}
-                                    sx={{
-                                        color: '#000',
-                                        fontWeight: 500,
-                                        textTransform: 'none',
-                                        px: 3,
-                                        py: 1,
-                                        borderRadius: 2,
-                                        display: {xs: 'none', sm: 'block'},
-                                        '&:hover': {
-                                            backgroundColor: '#f5f5f5'
-                                        }
-                                    }}
-                                >
-                                ログイン
-                                </Button>
+                                    <Button
+                                        onClick={() => router.push('/account/signup')}
+                                        sx={{
+                                            backgroundColor: '#000',
+                                            color: '#fff',
+                                            fontWeight: 600,
+                                            textTransform: 'none',
+                                            px: 3,
+                                            py: 1,
+                                            borderRadius: 2,
+                                            '&:hover': {
+                                                backgroundColor: '#333'
+                                            }
+                                        }}
+                                    >
+                                        始める
+                                    </Button>
+                                    <Button
+                                        onClick={() => router.push('/account/signin')}
+                                        sx={{
+                                            color: '#000',
+                                            fontWeight: 500,
+                                            textTransform: 'none',
+                                            px: 3,
+                                            py: 1,
+                                            borderRadius: 2,
+                                            display: {xs: 'none', sm: 'block'},
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5'
+                                            }
+                                        }}
+                                    >
+                                        ログイン
+                                    </Button>
                                 </>
                             )}
                         </>

@@ -1,7 +1,7 @@
 "use client";
-import React, { useRef, useEffect, useState } from 'react';
-import { Box, Card, CardContent, IconButton } from '@mui/material';
-import { useHoverAnimation, useScaleAnimation } from '../../lib/hooks/useGSAPAnimations';
+import React, {useEffect, useRef, useState} from 'react';
+import {Box, Card} from '@mui/material';
+import {useHoverAnimation} from '../../lib/hooks/useGSAPAnimations';
 import gsap from 'gsap';
 
 interface AnimatedCardProps {
@@ -10,6 +10,7 @@ interface AnimatedCardProps {
     sx?: any;
     hoverScale?: number;
     animationDelay?: number;
+
     [key: string]: any;
 }
 
@@ -25,7 +26,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
     const cardRef = useRef<HTMLDivElement>(null);
 
     // ホバーアニメーション
-    useHoverAnimation(cardRef, { scale: hoverScale });
+    useHoverAnimation(cardRef, {scale: hoverScale});
 
     // 初期アニメーション
     useEffect(() => {
@@ -76,6 +77,7 @@ interface AnimatedButtonProps {
     startIcon?: React.ReactNode;
     sx?: any;
     animationType?: 'scale' | 'slide' | 'bounce';
+
     [key: string]: any;
 }
 
@@ -132,8 +134,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 
         const handleClick = () => {
             gsap.fromTo(button,
-                { scale: 1 },
-                { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1, ease: "power2.inOut" }
+                {scale: 1},
+                {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1, ease: "power2.inOut"}
             );
         };
 
@@ -195,16 +197,16 @@ export const FloatingElement: React.FC<FloatingElementProps> = ({
 
         switch (floatDirection) {
             case 'up':
-                animationProps = { y: -floatDistance };
+                animationProps = {y: -floatDistance};
                 break;
             case 'down':
-                animationProps = { y: floatDistance };
+                animationProps = {y: floatDistance};
                 break;
             case 'left':
-                animationProps = { x: -floatDistance };
+                animationProps = {x: -floatDistance};
                 break;
             case 'right':
-                animationProps = { x: floatDistance };
+                animationProps = {x: floatDistance};
                 break;
         }
 
@@ -455,9 +457,9 @@ export const Flip3DCard: React.FC<Flip3DCardProps> = ({
         const back = backRef.current;
 
         // 初期設定
-        gsap.set(container, { perspective: 1000 });
-        gsap.set([front, back], { transformStyle: "preserve-3d" });
-        gsap.set(back, { rotationY: 180 });
+        gsap.set(container, {perspective: 1000});
+        gsap.set([front, back], {transformStyle: "preserve-3d"});
+        gsap.set(back, {rotationY: 180});
 
         const flip = () => {
             const newFlipped = !isFlipped;
@@ -472,8 +474,8 @@ export const Flip3DCard: React.FC<Flip3DCardProps> = ({
 
             // 爆発的なスケール変化
             gsap.fromTo(container,
-                { scale: 1 },
-                { scale: 1.1, duration: 0.4, yoyo: true, repeat: 1, ease: "back.out(3)" }
+                {scale: 1},
+                {scale: 1.1, duration: 0.4, yoyo: true, repeat: 1, ease: "back.out(3)"}
             );
         };
 
@@ -647,7 +649,7 @@ export const RainbowGlow: React.FC<RainbowGlowProps> = ({
             '#ff0080'  // ピンク
         ];
 
-        const tl = gsap.timeline({ repeat: -1 });
+        const tl = gsap.timeline({repeat: -1});
 
         colors.forEach((color, index) => {
             tl.to(elementRef.current, {
@@ -703,7 +705,7 @@ export const ParticleExplosion: React.FC<ParticleExplosionProps> = ({
         const container = containerRef.current;
 
         // パーティクルを作成
-        const particles = Array.from({ length: particleCount }, (_, i) => {
+        const particles = Array.from({length: particleCount}, (_, i) => {
             const particle = document.createElement('div');
             particle.style.position = 'absolute';
             particle.style.width = '4px';
@@ -814,14 +816,14 @@ export const SushiBelt: React.FC<SushiBeltProps> = ({
         const totalWidth = cards.length * (cardWidth + 20); // カード間のマージン込み
         const animationDistance = containerWidth + totalWidth;
 
-        tlRef.current = gsap.timeline({ repeat: -1, ease: "none" });
+        tlRef.current = gsap.timeline({repeat: -1, ease: "none"});
 
         cardRefs.current.forEach((cardEl, index) => {
             if (!cardEl) return;
 
             // 初期位置設定（画面右端から開始）
             const initialX = containerWidth + (cardWidth + 20) * index;
-            gsap.set(cardEl, { x: initialX });
+            gsap.set(cardEl, {x: initialX});
 
             // 左へ移動するアニメーション
             tlRef.current!.to(cardEl, {
@@ -1005,7 +1007,7 @@ export const SparkleEffect: React.FC<SparkleEffectProps> = ({
         const container = containerRef.current;
 
         // スパークルを作成
-        const sparkles = Array.from({ length: sparkleCount }, (_, i) => {
+        const sparkles = Array.from({length: sparkleCount}, (_, i) => {
             const sparkle = document.createElement('div');
             sparkle.innerHTML = '✨';
             sparkle.style.position = 'absolute';
@@ -1024,7 +1026,7 @@ export const SparkleEffect: React.FC<SparkleEffectProps> = ({
                 const x = Math.random() * container.offsetWidth;
                 const y = Math.random() * container.offsetHeight;
 
-                gsap.set(sparkle, { x, y, scale: 0, opacity: 0 });
+                gsap.set(sparkle, {x, y, scale: 0, opacity: 0});
 
                 gsap.to(sparkle, {
                     scale: 1,

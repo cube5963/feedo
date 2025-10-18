@@ -17,7 +17,7 @@ import {
   CardContent,
   Paper
 } from '@mui/material';
-import { Section } from '@/app/_components/forms/types';
+import { Section } from '@/utils/feedo/types';
 
 interface QuestionComponentProps {
   section: Section;

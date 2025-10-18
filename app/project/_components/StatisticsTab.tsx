@@ -23,7 +23,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {createClient} from '@/utils/supabase/client';
-import {Section} from '@/app/_components/forms/types';
+import {Section} from '@/utils/feedo/types';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PeopleIcon from '@mui/icons-material/People';
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';

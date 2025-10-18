@@ -4,8 +4,8 @@ import {Google} from "@mui/icons-material";
 import React, {useEffect, useState} from 'react';
 import {useRouter} from "next/navigation";
 import Header from '@/app/_components/Header';
-import {SupabaseAuthClient} from "@/utils/supabase/user";
-import {useGoogleAuth} from "@/app/account/_components/google";
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+import {useGoogleAuth} from "@/utils/supabase/user/google"; 
 
 export default function SignUp() {
     const [formValues, setFormValues] = useState({

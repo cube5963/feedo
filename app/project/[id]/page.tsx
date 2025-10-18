@@ -1,7 +1,6 @@
 "use client"
 import {useParams, useRouter} from 'next/navigation'
-import {useEffect, useRef, useState} from 'react'
-import FormComponent from '@/app/_components/form'
+import {useEffect, useState} from 'react'
 import {
     Alert,
     Avatar,
@@ -16,7 +15,6 @@ import {
     TextField,
     Typography
 } from '@mui/material'
-import {createClient} from '@/utils/supabase/client'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import Header from '@/app/_components/Header'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
@@ -25,6 +23,15 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import StatisticsTab from '@/app/project/_components/StatisticsTab'
+import FormManager from "@/app/_components/forms/FormManager";
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+import {getImage} from "@/utils/feedo/image/get";
+import {uploadImage} from "@/utils/feedo/image/upload";
+import {deleteImage} from "@/utils/feedo/image/delete";
+import {updateFormName} from "@/utils/feedo/form/name/updateName";
+import {getFormName} from "@/utils/feedo/form/name/getName";
+import {getFormMessage} from "@/utils/feedo/form/message/getMessage";
+import {updateFormMessage} from "@/utils/feedo/form/message/updateMessage";
 
 export default function ProjectPage() {
     const params = useParams()
@@ -35,57 +42,66 @@ export default function ProjectPage() {
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState("")
     const [currentTab, setCurrentTab] = useState(0) // タブの状態を追加
+    const [image, setImage] = useState<string | null>(null)
+    const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
-    const supabase = createClient()
+    useEffect(() => {
+        if (!supabase) return;
 
-    // フォーム終了メッセージを取得する関数
-    const fetchFormMessage = async () => {
-        try {
-            const {data, error} = await supabase
-                .from('Form')
-                .select('FormMessage')
-                .eq('FormUUID', projectId)
-                .eq('Delete', false)
-                .single()
+        setLoading(true)
 
-            if (error || !data) {
-                console.error('フォームメッセージ取得エラー:', error)
+        const initialize = async () => {
+            if (!supabase || authLoading) return;
+
+            // 認証チェック
+            if (!isAuth || !user) {
+                router.push('/account/signin');
+                return;
+            }
+
+            try {
+                const formName = await getFormName(projectId, supabase);
+                if (formName == null) {
+                    router.push('/project');
+                    return;
+                }
+                setFormTitle(formName || '');
+
+                const formMessage = await getFormMessage(projectId, supabase);
+                if (formMessage) {
+                    setFormMessage(formMessage);
+                }
+
+                const url = await getImage(projectId, supabase);
+                if (url) {
+                    setImage(url);
+                }
+            } catch (error) {
                 return
             }
-            setFormMessage(data.FormMessage || '')
-        } catch (error) {
-            console.error('フォームメッセージ取得エラー:', error)
-        }
-    }
+        };
+
+        setLoading(false)
+
+        initialize();
+    }, [router, supabase, isAuth, user, projectId, authLoading]);
+
 
     // フォーム終了メッセージを更新する関数
-    const updateFormMessage = async (newFormMessage: string) => {
+    const handleUpdateFormMessage = async (newFormMessage: string) => {
+        if (!supabase) return;
+
         setLoading(true)
-        try {
-            const {error} = await supabase
-                .from('Form')
-                .update({FormMessage: newFormMessage, UpdatedAt: new Date().toISOString()})
-                .eq('FormUUID', projectId)
-                .eq('Delete', false)
+        const res = await updateFormMessage(projectId, newFormMessage, supabase)
 
-            if (error) {
-                console.error('フォームメッセージ更新エラー:', error)
-                setMessage('アンケート終了メッセージの更新に失敗しました')
-                return
-            }
-            setMessage('アンケート終了メッセージを更新しました')
-            setTimeout(() => setMessage(''), 3000)
-        } catch (error) {
-            console.error('フォームメッセージ更新エラー:', error)
+        if(!res){
             setMessage('アンケート終了メッセージの更新に失敗しました')
-        } finally {
-            setLoading(false)
+            return
         }
-    }
 
-    const [imageUrl, setImageUrl] = useState<string | null>(null)
-    const [uploading, setUploading] = useState(false)
-    const inputRef = useRef<HTMLInputElement>(null)
+        setMessage('アンケート終了メッセージを更新しました')
+        setTimeout(() => setMessage(''), 3000)
+    }
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setCurrentTab(newValue)
@@ -93,6 +109,8 @@ export default function ProjectPage() {
 
     // アンケート回答ページに移動する関数
     const handleAnswer = async () => {
+        if (!supabase) return;
+
         try {
             // 最初の質問を取得
             const {data: sections, error} = await supabase
@@ -118,6 +136,8 @@ export default function ProjectPage() {
 
     // プレビューページに移動する関数
     const handlePreview = async () => {
+        if (!supabase) return;
+
         try {
             // 最初の質問を取得
             const {data: sections, error} = await supabase
@@ -142,146 +162,62 @@ export default function ProjectPage() {
         }
     }
 
-    // フォーム名を取得する関数
-    const fetchFormName = async () => {
-        try {
-            const {data, error} = await supabase
-                .from('Form')
-                .select('FormName')
-                .eq('FormUUID', projectId)
-                .eq('Delete', false)
-                .single()
+    const handleImageDelete = async () => {
+        if (!supabase) return;
 
-            if (error || !data) {
-                console.error('フォーム名取得エラー:', error)
-                router.push('/project')
-                return
-            }
+        const res = await deleteImage(projectId, supabase)
 
-            setFormTitle(data.FormName || '')
-        } catch (error) {
-            console.error('フォーム名取得エラー:', error)
-            router.push('/project')
+        if (!res) {
+            setMessage("削除に失敗しました。");
+            return;
         }
+
+        setImage(null);
+        setMessage("画像を削除しました。");
+    }
+
+    const handleImageUpload = async () => {
+        if(!supabase) return
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/'
+
+        input.onchange = async () => {
+            if (!input.files || input.files.length === 0) return;
+
+            const file = input.files[0];
+            const url = await uploadImage(projectId, file, supabase)
+
+            if (url) {
+                setImage(url);
+                setMessage("アップロードに成功しました。");
+            } else {
+                setMessage("アップロードに失敗しました。");
+            }
+        };
+
+        input.click();
+
     }
 
     // フォーム名を更新する関数
-    const updateFormName = async (newFormName: string) => {
-        if (!newFormName.trim()) return
+    const handleUpdateFormName = async (newFormName: string) => {
+        if (!newFormName.trim() || !supabase) return
 
         setLoading(true)
-        try {
-            const {error} = await supabase
-                .from('Form')
-                .update({FormName: newFormName, UpdatedAt: new Date().toISOString()})
-                .eq('FormUUID', projectId)
-                .eq('Delete', false)
 
-            if (error) {
-                console.error('フォーム名更新エラー:', error)
-                setMessage('フォーム名の更新に失敗しました')
-                return
-            }
+        const res = await updateFormName(projectId, newFormName, supabase)
 
-            setMessage('フォーム名を更新しました')
-            setTimeout(() => setMessage(''), 3000) // 3秒後にメッセージを消す
-        } catch (error) {
-            console.error('フォーム名更新エラー:', error)
+        if(!res){
             setMessage('フォーム名の更新に失敗しました')
-        } finally {
-            setLoading(false)
+        }else{
+            setMessage('フォーム名を更新しました')
+            setTimeout(() => setMessage(''), 3000)
         }
+
+        setLoading(false)
     }
-
-    function getNearestSize(value: number): number {
-        const sizes = [64, 128, 256]
-        return sizes.reduce((prev, curr) =>
-            Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-        )
-    }
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-        if (file.size > 5 * 1024 * 1024) {
-            setMessage('画像サイズは5MB以下にしてください')
-            return
-        }
-        setUploading(true)
-
-        const img = new window.Image()
-        img.src = URL.createObjectURL(file)
-        await new Promise((resolve) => {
-            img.onload = resolve
-        })
-
-        const maxSide = Math.max(img.width, img.height)
-        const targetSize = getNearestSize(maxSide)
-        const canvas = document.createElement('canvas')
-        canvas.width = targetSize
-        canvas.height = targetSize
-        const ctx = canvas.getContext('2d')!
-        ctx.fillStyle = '#fff'
-        ctx.fillRect(0, 0, targetSize, targetSize)
-        // 中央に描画
-        const offsetX = (targetSize - img.width * (targetSize / maxSide)) / 2
-        const offsetY = (targetSize - img.height * (targetSize / maxSide)) / 2
-        ctx.drawImage(
-            img,
-            offsetX,
-            offsetY,
-            img.width * (targetSize / maxSide),
-            img.height * (targetSize / maxSide)
-        )
-
-        const blob: Blob = await new Promise((resolve) =>
-            canvas.toBlob((b) => resolve(b!), file.type)
-        )
-
-        const filePath = `feedo/${projectId}/${file.name}`
-
-        const {error} = await supabase.storage
-            .from('feedo')
-            .upload(filePath, blob, {upsert: true})
-
-        if (error) {
-            setMessage('画像のアップロードに失敗しました')
-            setUploading(false)
-            return
-        }
-
-        const {data} = supabase.storage
-            .from('feedo')
-            .getPublicUrl(filePath)
-        setImageUrl(data.publicUrl)
-        setUploading(false)
-        setMessage('画像をアップロードしました')
-    }
-
-    // コンポーネントマウント時にフォーム名・メッセージを取得
-    useEffect(() => {
-        if (projectId) {
-            fetchFormName()
-            fetchFormMessage()
-        }
-    }, [projectId])
-
-    useEffect(() => {
-        const fetchImage = async () => {
-            // 画像ファイル名が分かっている場合は指定、なければリスト取得
-            const {data, error} = await supabase.storage
-                .from('feedo')
-                .list(`${projectId}/`, {limit: 1})
-            if (data && data.length > 0) {
-                const {data: urlData} = supabase.storage
-                    .from('feedo')
-                    .getPublicUrl(`feedo/${projectId}/${data[0].name}`)
-                setImageUrl(urlData.publicUrl)
-            }
-        }
-        fetchImage()
-    }, [projectId])
-
 
     // 統計タブのコンテンツ
     const renderStatisticsTab = () => (
@@ -317,11 +253,11 @@ export default function ProjectPage() {
                         fullWidth
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
-                        onBlur={() => updateFormName(formTitle)}
+                        onBlur={() => handleUpdateFormName(formTitle)}
                         inputProps={{maxLength: 50}}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                                updateFormName(formTitle)
+                                handleUpdateFormName(formTitle)
                             }
                         }}
                         disabled={loading}
@@ -341,31 +277,7 @@ export default function ProjectPage() {
                     <Button
                         variant="contained"
                         startIcon={<QuestionAnswerIcon/>}
-                        onClick={async () => {
-                            try {
-
-                                // 最初の質問を取得
-                                const {data: sections, error} = await supabase
-                                    .from('Section')
-                                    .select('SectionUUID')
-                                    .eq('FormUUID', projectId)
-                                    .eq('Delete', false)
-                                    .order('SectionOrder', {ascending: true})
-                                    .limit(1)
-
-                                if (error || !sections || sections.length === 0) {
-                                    setMessage('質問が見つかりません。まず質問を作成してください。')
-                                    return
-                                }
-
-                                // 最初の質問のアンケート回答ページを新しいタブで開く
-                                const answerUrl = `/answer/${projectId}/${sections[0].SectionUUID}`;
-                                window.open(answerUrl, '_blank');
-                            } catch (error) {
-                                console.error('アンケート回答エラー:', error)
-                                setMessage('アンケート回答ページの表示に失敗しました')
-                            }
-                        }}
+                        onClick={handleAnswer}
                         sx={{
                             minWidth: 140,
                             height: 56  // TextFieldと同じ高さ
@@ -399,7 +311,7 @@ export default function ProjectPage() {
                                 sx={{mt: 1}}
                                 value={formMessage}
                                 onChange={(e) => setFormMessage(e.target.value)}
-                                onBlur={() => updateFormMessage(formMessage)}
+                                onBlur={() => handleUpdateFormMessage(formMessage)}
                                 inputProps={{maxLength: 200}}
                                 disabled={loading}
                             />
@@ -441,14 +353,15 @@ export default function ProjectPage() {
 
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 3, mb: 3}}>
                     <Avatar
-                        src={imageUrl || undefined}
+                        src={image || undefined}
                         sx={{
                             width: 80,
                             height: 80,
-                            bgcolor: 'primary.main'
+                            bgcolor: image ? 'transparent' : 'primary.main',
+                            borderRadius: image ? 2 : '50%',
                         }}
                     >
-                        {!imageUrl && <PhotoCameraIcon sx={{fontSize: 40}}/>}
+                        {!image && <PhotoCameraIcon sx={{fontSize: 40}}/>}
                     </Avatar>
 
                     <Box sx={{flex: 1}}>
@@ -463,39 +376,16 @@ export default function ProjectPage() {
                                 variant="outlined"
                                 startIcon={<CloudUploadIcon/>}
                                 size="small"
-                                onClick={() => inputRef.current?.click()}
-                                disabled={uploading}
+                                onClick={handleImageUpload}
                             >
                                 画像を選択
                             </Button>
-                            <input
-                                type="file"
-                                accept="image/png, image/jpeg, image/webp"
-                                style={{display: 'none'}}
-                                ref={inputRef}
-                                onChange={handleFileChange}
-                            />
                             <Button
                                 variant="text"
                                 color="error"
                                 size="small"
-                                disabled={!imageUrl || uploading}
-                                onClick={async () => {
-                                    if (!imageUrl) return
-                                    setUploading(true)
-                                    // 画像ファイル名を取得
-                                    const {data} = await supabase.storage
-                                        .from('feedo')
-                                        .list(`${projectId}/`, {limit: 1})
-                                    if (data && data.length > 0) {
-                                        await supabase.storage
-                                            .from('feedo')
-                                            .remove([`${projectId}/${data[0].name}`])
-                                    }
-                                    setImageUrl(null)
-                                    setUploading(false)
-                                    setMessage('画像を削除しました')
-                                }}
+                                sx={{opacity: 0.6}}
+                                onClick={handleImageDelete}
                             >
                                 削除
                             </Button>
@@ -559,27 +449,40 @@ export default function ProjectPage() {
                     </Tabs>
                 </Paper>
 
-                {/* メッセージ表示 */}
-                {message && (
-                    <Alert
-                        severity={message.includes('失敗') ? 'error' : 'success'}
-                        sx={{
-                            mb: 3,
-                            borderRadius: 2
-                        }}
-                    >
-                        {message}
-                    </Alert>
-                )}
-
-                {/* タブコンテンツ */}
-                {currentTab === 0 && (
-                    <Box>
-                        <FormComponent formId={projectId} hideFormSelector={true}/>
+                {(!isAuth && loading) ? (
+                    <Box sx={{textAlign: 'center', py: 4}}>
+                        <Typography variant="body2" color="text.secondary">
+                            認証情報を確認中...
+                        </Typography>
+                    </Box>
+                ) : (isAuth && !loading && supabase) ? (
+                    <>
+                        {message && (
+                            <Alert
+                                severity={message.includes('失敗') ? 'error' : 'success'}
+                                sx={{
+                                    mb: 3,
+                                    borderRadius: 2
+                                }}
+                            >
+                                {message}
+                            </Alert>
+                        )}
+                        {currentTab === 0 && (
+                            <Box>
+                                <FormManager formId={projectId} hideFormSelector={true} supabase={supabase}/>
+                            </Box>
+                        )}
+                        {currentTab === 1 && renderStatisticsTab()}
+                        {currentTab === 2 && renderSettingsTab()}
+                    </>
+                ) : (
+                    <Box sx={{textAlign: 'center', py: 4}}>
+                        <Typography variant="body2" color="text.secondary">
+                            読み込み中...
+                        </Typography>
                     </Box>
                 )}
-                {currentTab === 1 && renderStatisticsTab()}
-                {currentTab === 2 && renderSettingsTab()}
             </Box>
         </Box>
     )

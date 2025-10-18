@@ -4,8 +4,8 @@ import {Google} from "@mui/icons-material";
 import React, {useEffect, useState} from 'react';
 import Header from "@/app/_components/Header";
 import {useRouter} from "next/navigation";
-import {SupabaseAuthClient} from "@/utils/supabase/user";
-import {useGoogleAuth} from '@/app/account/_components/google';
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+import {useGoogleAuth} from '@/utils/supabase/user/google';
 
 export default function SignIn() {
     const router = useRouter()
@@ -27,7 +27,7 @@ export default function SignIn() {
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!supabase || typeof supabase.then === 'function') {
+        if (!supabase) {
             setError("認証システムの初期化中です。しばらくお待ちください。");
             return;
         }

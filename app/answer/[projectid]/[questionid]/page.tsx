@@ -4,7 +4,7 @@ import React, {useState, useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import {Box, Typography, Alert, CircularProgress} from '@mui/material';
 import {createAnonClient} from '@/utils/supabase/anonClient';
-import {Section} from '@/app/_components/forms/types';
+import {Section} from '@/utils/feedo/types';
 import QuestionComponent from '@/app/preview/_components/QuestionComponent';
 import ProgressBar from '@/app/preview/_components/ProgressBar';
 import AnswerNavigationButtons from '@/app/answer/_components/AnswerNavigationButtons';

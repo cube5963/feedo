@@ -1,22 +1,21 @@
-import { useState } from 'react';
-import { SupabaseAuthClient } from '@/utils/supabase/user';
+import {useState} from 'react';
+import {SupabaseAuthClient} from '@/utils/supabase/user/user';
 
 export function useGoogleAuth() {
     const [error, setError] = useState<string | null>(null);
-    const { supabase } = SupabaseAuthClient();
+    const {supabase} = SupabaseAuthClient();
 
     const signInWithGoogle = async () => {
         if (!supabase) return;
 
         setError(null);
 
+        const redirectTo = await ('REDIRECT_URL');
         try {
-            const res = await fetch('/api/env?type=REDIRECT_URL');
-            const result = await res.json();
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            const {data, error} = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: result.data,
+                    redirectTo: redirectTo,
                 },
             });
 

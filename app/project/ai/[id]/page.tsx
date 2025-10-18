@@ -14,13 +14,12 @@ import Header from '@/app/_components/Header';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SendIcon from '@mui/icons-material/Send';
 import {useParams, useRouter} from 'next/navigation'
-import { createPersonalClient } from '@/utils/supabase/personalClient';
-import type { User } from '@supabase/supabase-js';
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+import {getEnvVars} from "@/utils/feedo/getEnv";
 
 export default function AI(){
     const params = useParams()
     const router = useRouter()
-    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
     const [prompt, setprompt] = useState({
         title: '',
@@ -28,28 +27,26 @@ export default function AI(){
     })
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
-    // ユーザー認証状態の確認
     useEffect(() => {
-        const checkUser = async () => {
-            const supabase = createPersonalClient();
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            setUser(currentUser);
+        if (!supabase || authLoading) return;
 
-            if (!currentUser) {
+        const checkUser = async () => {
+            if (!isAuth || !user) {
                 router.push('/account/signin');
+                return;
             }
         };
 
         checkUser();
-    }, [router]);
+    }, [router, supabase, isAuth, user, authLoading]);
 
     const submit = async (e: React.FormEvent)=> {
         e.preventDefault()
 
         // ログインチェック
-        if (!user) {
-            setError('ログインが必要です');
+        if (!isAuth || !user || !supabase) {
             router.push('/account/signin');
             return;
         }
@@ -60,17 +57,13 @@ export default function AI(){
 
         // 実際のログインユーザーのIDを使用
         const userId = user.id;
-        console.log('ログインユーザーID:', userId, 'Email:', user.email);
-        const res = await fetch('/api/env?data=AI_API_URL');
-        const result = await res.json();
-        const url = result.data as string + "create";
+        const baseUrl = await getEnvVars('AI_API_URL');
+        const url = baseUrl as string + "create";
         const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
         const form_id = params.id
 
 
         try {
-            const supabase = createPersonalClient();
-
             await supabase.from('Form').update({"FormName": prompt.title}).eq("FormUUID", params.id).single()
 
             // タイムアウト機能付きのfetch

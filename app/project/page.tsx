@@ -20,7 +20,7 @@ import {useEffect, useState} from 'react';
 import {createForm} from '@/utils/feedo/form/create';
 import {fixAIFormDates, formatSafeDate} from "@/utils/feedo/fixTime";
 import {deleteForm} from "@/utils/feedo/form/delete";
-import {SupabaseAuthClient} from "@/utils/supabase/user";
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
 
 // Supabaseフォーム型
 interface FormData {
@@ -36,19 +36,18 @@ interface FormData {
 export default function Project() {
     const router = useRouter();
     const [createOpen, setCreateOpen] = useState(false);
-    const [useAi, setUseAi] = useState(false);
     const [loading, setLoading] = useState(false);
     const [forms, setForms] = useState<FormData[]>([]);
     const [loadingForms, setLoadingForms] = useState(true);
-    const {supabase, isAuth, user　} = SupabaseAuthClient();
+    const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
     // ログインユーザーの認証状態確認とフォーム取得
     useEffect(() => {
-        if (!supabase) return;
+        if (!supabase || authLoading) return;
 
         const checkUserAndFetchForms = async () => {
             try {
-                if (!isAuth || !user || !supabase) {
+                if (!isAuth || !user) {
                     router.push('/account/signin');
                     return;
                 }
@@ -119,7 +118,7 @@ export default function Project() {
         };
 
         checkUserAndFetchForms();
-    }, [router, supabase]);
+    }, [router, supabase, authLoading, isAuth, user]);
 
 
     const handleClick = (formId: string) => {
@@ -127,14 +126,9 @@ export default function Project() {
         router.push(`/project/${formId}`);
     };
 
-    const handleBack = () => {
-        setUseAi(false);
-        setCreateOpen(true);
-    };
-
     // 新規フォーム作成関数
     const handleCreateNewForm = async (ai: boolean) => {
-        if (!isAuth　|| !supabase) {
+        if (!isAuth || !supabase) {
             router.push('/account/signin');
             return;
         }
@@ -339,17 +333,6 @@ export default function Project() {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Dialog open={useAi} onClose={() => setUseAi(false)}>
-                <DialogTitle>初期設定</DialogTitle>
-                <DialogContent>
-                    {/* 必要ならここに初期設定内容を追加 */}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleBack}>戻る</Button>
-                    <Button variant="contained" onClick={() => setUseAi(false)}>次へ</Button>
-                </DialogActions>
-            </Dialog>
-
         </Box>
     );
 }

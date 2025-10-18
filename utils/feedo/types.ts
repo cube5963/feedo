@@ -16,6 +16,7 @@ export interface FormProps {
     initialSections?: Section[]
     formId?: string
     hideFormSelector?: boolean
+    supabase?: any
 }
 
 export interface SliderSettings {

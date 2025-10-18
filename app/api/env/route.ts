@@ -9,11 +9,14 @@ export async function GET(req: NextRequest) {
     }
 
     let data;
-    if(type === 'URL'){
+    if(type === 'SUPABASE_URL'){
         data = process.env.SUPABASE_URL;
     }
-    else if(type === 'ANON_KEY'){
+    else if(type === 'SUPABASE_ANON_KEY'){
         data = process.env.SUPABASE_ANON_KEY;
+    }
+    else if(type === 'AI_API_URL'){
+        data = process.env.AI_API_URL;
     }
     else if(type === 'AI_API_KEY'){
         data = process.env.AI_API_KEY;
@@ -24,6 +27,9 @@ export async function GET(req: NextRequest) {
     else if(type === 'CF_TURNSTILE_SITE_KEY'){
         data = process.env.CF_TURNSTILE_SITE_KEY;
     }
+
+    if(data === undefined || data === null)
+        return new Response(JSON.stringify({ error: 'Missing parameters' }), { status: 400 });
 
     return new Response(JSON.stringify({ data:data }), { status: 200 });
 }

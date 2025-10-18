@@ -1,5 +1,5 @@
 export async function deleteForm(formId: string, supabase: any): Promise<boolean> {
-    const {error: sectionError } = await supabase.form("Section").update({Delete: true}).eq('FormUUID', formId)
+    const {error: sectionError } = await supabase.from("Section").update({Delete: true}).eq('FormUUID', formId)
 
     if(sectionError){
         alert(`セクションの削除に失敗しました: ${sectionError.message}`);
