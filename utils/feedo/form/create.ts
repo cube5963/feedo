@@ -1,10 +1,5 @@
-import {createPersonalClient} from "@/utils/supabase/personalClient";
-
-export async function createForm(user: any): Promise<any | null> {
+export async function createForm(user: any, supabase: any): Promise<any | null> {
     try {
-        const supabase = createPersonalClient(); // 個人用クライアント使用
-
-        // 新しいフォームを作成（UserIDと日時を設定）
         const currentTime = new Date().toISOString(); // ISO 8601形式の現在日時
         const formData = {
             FormName: 'New Form', // デフォルトのフォーム名

@@ -1,11 +1,11 @@
 "use client";
 import {Alert, Box, Button, Divider, Link, Paper, TextField, Typography} from "@mui/material";
 import {Google} from "@mui/icons-material";
-import {createClient} from "@/utils/supabase/client";
 import React, {useEffect, useState} from 'react';
-import {createPersonalClient} from "@/utils/supabase/personalClient";
 import {useRouter} from "next/navigation";
 import Header from '@/app/_components/Header';
+import {SupabaseAuthClient} from "@/utils/supabase/user";
+import {useGoogleAuth} from "@/app/account/_components/google";
 
 export default function SignUp() {
     const [formValues, setFormValues] = useState({
@@ -16,28 +16,26 @@ export default function SignUp() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState<string | null>(null);
+    const {supabase, isAuth, loading: authLoading} = SupabaseAuthClient();
+    const {signInWithGoogle, error: googleError, isReady} = useGoogleAuth();
 
     const router = useRouter();
 
     useEffect(() => {
-        const checkUser = async () => {
-            const supabase = createPersonalClient(); // 個人用クライアント使用
+        if (!authLoading && isAuth) {
+            router.push('/project');
+        }
+    }, [isAuth, authLoading, router]);
 
-            // 現在のセッション確認
-            const {data: sessionData, error: sessionError} = await supabase.auth.getSession();
-
-            const currentUser = sessionData?.session?.user;
-            if (currentUser) {
-                router.push('/project'); // ユーザーが存在する場合、/projectへリダイレクト
-                return;
-            }
-        };
-
-        checkUser();
-    }, [router]);
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!supabase) {
+            setError("認証システムの初期化中です。しばらくお待ちください。");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         setSuccess(null);
@@ -61,7 +59,6 @@ export default function SignUp() {
             return;
         }
 
-        const supabase = createClient();
         const {data, error} = await supabase.auth.signUp({
             email,
             password,
@@ -73,30 +70,14 @@ export default function SignUp() {
         } else {
             setSuccess("登録が完了しました。確認メールをチェックしてください。");
             setFormValues({email: '', password: '', confirmPassword: ''});
-        }
-    }
-
-    const google_signup = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        setError(null);
-
-        const supabase = createClient();
-        const {data, error} = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL,
-            },
-        });
-
-        if (error) {
-            setError(`エラーが発生しました: ${error.message}`);
+            router.push('/project');
         }
     }
 
     return (
         <div style={{minHeight: '100vh', backgroundColor: '#f5f5f5'}}>
             <Header showBackButton={false} showNavigation={true}/>
-            <Box sx={{ height: 32 }} />
+            <Box sx={{height: 32}}/>
 
             <Box
                 sx={{
@@ -175,7 +156,7 @@ export default function SignUp() {
                             fullWidth
                             variant="contained"
                             size="large"
-                            disabled={loading}
+                            disabled={loading || !supabase}
                             sx={{
                                 py: 1.5,
                                 mb: 2,
@@ -200,7 +181,8 @@ export default function SignUp() {
                         variant="outlined"
                         size="large"
                         startIcon={<Google/>}
-                        onClick={google_signup}
+                        onClick={signInWithGoogle}
+                        disabled={!isReady}
                         sx={{
                             py: 1.5,
                             mb: 3,

@@ -61,8 +61,9 @@ export default function AI(){
         // 実際のログインユーザーのIDを使用
         const userId = user.id;
         console.log('ログインユーザーID:', userId, 'Email:', user.email);
-
-        const url = process.env.NEXT_PUBLIC_AI_API_URL as string + "create";
+        const res = await fetch('/api/env?data=AI_API_URL');
+        const result = await res.json();
+        const url = result.data as string + "create";
         const send_prompt = `以下の与えられた情報のみでフォームとセクションを作成してください。聞きたい内容から必要と思われるセクションを適切なタイプから選択して追加してください。すべてテキスト入力ではなく他の選択タイプを適宜利用してください。セクションは質問形式になるように文章を調節してください。タイトル:${prompt.title} 聞きたい内容:${prompt.text}`
         const form_id = params.id
 
