@@ -1,17 +1,11 @@
 "use client"
-import {Section} from '@/utils/feedo/types'
+import {SectionListProps} from '@/utils/feedo/types'
 import {SortableSection} from './SortableSection'
 import {closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors,} from '@dnd-kit/core'
 import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,} from '@dnd-kit/sortable'
 import {Box, Typography} from '@mui/material'
 
-interface SectionListProps {
-    sections: Section[]
-    currentFormId: string | null
-    onDelete: (id: string) => void
-    onUpdate: (sectionId: string, updatedSection: Partial<Section>) => void
-    onReorder: (event: any) => void
-}
+
 
 export function SectionList({
                                 sections,

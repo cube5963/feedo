@@ -104,7 +104,7 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
             return
         }
 
-        router.push(`/preview/${formId}/${uuid}`)
+        router.push(`/answer/preview/${formId}/${uuid}`)
     }
 
     const handleImageDelete = async () => {

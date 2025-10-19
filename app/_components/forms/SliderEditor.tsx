@@ -1,12 +1,7 @@
 "use client"
-import {SliderSettings} from '@/utils/feedo/types'
+import {SliderEditorProps} from '@/utils/feedo/types'
 import {Box, Divider, TextField, Typography} from '@mui/material'
 
-interface SliderEditorProps {
-    settings: SliderSettings
-    onUpdate: (settings: SliderSettings) => void
-    onSave: (newDesc: string) => void
-}
 
 export function SliderEditor({settings, onUpdate, onSave}: SliderEditorProps) {
     const handleSliderChange = (field: string, value: any) => {

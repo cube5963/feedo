@@ -27,19 +27,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
 import TuneIcon from '@mui/icons-material/Tune'
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
-
-
-interface SectionCreatorProps {
-    currentFormId: string | null
-    onSave: (sectionData: Omit<Section, 'SectionUUID' | 'CreatedAt' | 'UpdatedAt'>) => Promise<void>
-    loading: boolean
-    sectionsCount: number
-    hideAddButton?: boolean
-}
-
-export interface SectionCreatorRef {
-    resetForm: () => void
-}
+import { SectionCreatorProps, SectionCreatorRef } from "@/utils/feedo/types";
 
 export const SectionCreator = forwardRef<SectionCreatorRef, SectionCreatorProps>(
     ({currentFormId, onSave, loading, sectionsCount, hideAddButton = false}, ref) => {

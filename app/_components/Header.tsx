@@ -5,15 +5,7 @@ import {useRouter} from 'next/navigation';
 import {AppBar, Box, Button, IconButton, Stack, Toolbar, Typography} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeIcon from '@mui/icons-material/Home';
-
-interface HeaderProps {
-    title?: string;
-    onBack?: () => void;
-    showBackButton?: boolean;
-    showNavigation?: boolean;
-    showActions?: boolean;
-    maxWidth?: number;
-}
+import {HeaderProps} from "@/utils/feedo/types";
 
 export default function Header({
                                    title,

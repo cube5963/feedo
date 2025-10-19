@@ -3,10 +3,11 @@ import {useEffect, useRef, useState} from 'react'
 import {useRouter} from 'next/navigation'
 import {FormProps, Section} from '@/utils/feedo/types'
 import {FormSelector} from './FormSelector'
-import {SectionCreator, SectionCreatorRef} from './SectionCreator'
+import {SectionCreator } from './SectionCreator'
 import {SectionList} from './SectionList'
 import {arrayMove} from '@dnd-kit/sortable'
 import {Alert, Box, Typography} from '@mui/material'
+import {SectionCreatorRef} from '@/utils/feedo/types'
 
 export default function FormManager({initialSections = [], formId, hideFormSelector = false, supabase}: FormProps) {
     if (!supabase) {

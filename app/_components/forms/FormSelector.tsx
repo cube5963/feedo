@@ -1,14 +1,7 @@
 "use client"
 import {Box, Button, FormControl, InputLabel, MenuItem, Select, Typography} from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-
-interface FormSelectorProps {
-    availableFormIds: string[]
-    currentFormId: string | null
-    onFormChange: (formId: string) => void
-    onCreateNew: () => void
-    loading: boolean
-}
+import { FormSelectorProps} from "@/utils/feedo/types";
 
 export function FormSelector({
                                  availableFormIds,

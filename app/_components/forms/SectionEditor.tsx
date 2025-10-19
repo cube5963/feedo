@@ -22,11 +22,7 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import StarIcon from '@mui/icons-material/Star'
 import TuneIcon from '@mui/icons-material/Tune'
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
-
-interface SectionEditorProps {
-    section: Section
-    onUpdate: (sectionId: string, updatedSection: Partial<Section>) => void
-}
+import {SectionEditorProps} from "@/utils/feedo/types";
 
 export function SectionEditor({section, onUpdate}: SectionEditorProps) {
     const [localSection, setLocalSection] = useState<Section>(section)

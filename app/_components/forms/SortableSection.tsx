@@ -1,7 +1,7 @@
 "use client"
 import {useSortable} from '@dnd-kit/sortable'
 import {CSS} from '@dnd-kit/utilities'
-import {Section} from '../../../utils/feedo/types'
+import {SortableSectionProps} from '@/utils/feedo/types'
 import {SectionEditor} from './SectionEditor'
 import {Accordion, AccordionDetails, AccordionSummary, Box, Chip, IconButton, Typography} from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -13,12 +13,6 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import StarIcon from '@mui/icons-material/Star'
 import TuneIcon from '@mui/icons-material/Tune'
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
-
-interface SortableSectionProps {
-    section: Section
-    onDelete: (id: string) => void
-    onUpdate: (sectionId: string, updatedSection: Partial<Section>) => void
-}
 
 export function SortableSection({section, onDelete, onUpdate}: SortableSectionProps) {
     const {

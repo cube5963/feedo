@@ -4,9 +4,9 @@ import React, {useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import {Alert, Box, CircularProgress, Typography} from '@mui/material';
 import {Section} from '@/utils/feedo/types';
-import QuestionComponent from '@/app/preview/_components/QuestionComponent';
-import ProgressBar from '@/app/preview/_components/ProgressBar';
-import NavigationButtons from '@/app/preview/_components/NavigationButtons';
+import QuestionComponent from '@/app/answer/_components/QuestionComponent';
+import ProgressBar from '@/app/answer/_components/ProgressBar';
+import NavigationButtons from '@/app/answer/_components/NavigationButtons';
 import Header from '@/app/_components/Header';
 import {SupabaseAuthClient} from "@/utils/supabase/user/user";
 

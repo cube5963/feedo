@@ -1,13 +1,8 @@
 "use client"
 import {Box, Divider, TextField, Typography} from '@mui/material'
 import StarIcon from '@mui/icons-material/Star'
+import {StarEditorProps} from "@/utils/feedo/types";
 
-interface StarEditorProps {
-    starCount: number
-    options: string[]
-    onUpdate: (count: number, options: string[]) => void
-    onSave: (newDesc: string) => void
-}
 
 export function StarEditor({starCount, options, onUpdate, onSave}: StarEditorProps) {
     const handleStarCountChange = (newCount: number) => {

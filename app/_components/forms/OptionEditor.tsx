@@ -3,13 +3,7 @@ import {FormType} from '@/utils/feedo/types'
 import {Box, Button, Chip, Divider, IconButton, TextField, Typography} from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-
-interface OptionEditorProps {
-    options: string[]
-    onUpdate: (options: string[]) => void
-    onSave: (newDesc: string) => void
-    sectionType: FormType
-}
+import { OptionEditorProps } from "@/utils/feedo/types";
 
 export function OptionEditor({options, onUpdate, onSave, sectionType}: OptionEditorProps) {
     const minOptions = sectionType === 'star' ? 3 : 2
