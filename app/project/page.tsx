@@ -16,11 +16,12 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import {useRouter} from 'next/navigation'; // App Router 用
 import Header from '@/app/_components/Header'
-import {useEffect, useState} from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {createForm} from '@/utils/feedo/form/create';
 import {fixAIFormDates, formatSafeDate} from "@/utils/feedo/fixTime";
 import {deleteForm} from "@/utils/feedo/form/delete";
 import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+import {getImage} from "@/utils/feedo/image/get";
 
 // Supabaseフォーム型
 interface FormData {
@@ -39,7 +40,10 @@ export default function Project() {
     const [loading, setLoading] = useState(false);
     const [forms, setForms] = useState<FormData[]>([]);
     const [loadingForms, setLoadingForms] = useState(true);
-    const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
+    const [formImages, setFormImages] = useState<Record<string, string>>({});
+    const {supabase, isAuth, loading: authLoading, user} = SupabaseAuthClient();
+    const imageCacheRef = useRef<Record<string, string>>({});
+    const imagesInitializedRef = useRef(false);
 
     // ログインユーザーの認証状態確認とフォーム取得
     useEffect(() => {
@@ -119,6 +123,55 @@ export default function Project() {
 
         checkUserAndFetchForms();
     }, [router, supabase, authLoading, isAuth, user]);
+
+    useEffect(() => {
+        if (!supabase || forms.length === 0) return;
+        // 初回に既に実行済みなら何もしない
+        if (imagesInitializedRef.current) return;
+
+        let mounted = true;
+
+        const fetchImages = async () => {
+            const targets = forms.filter(f => f.ImgID && !imageCacheRef.current[f.FormUUID]);
+            if (targets.length === 0) {
+                // 取得対象が無ければフラグだけ立てて終了（初回完了扱い）
+                imagesInitializedRef.current = true;
+                return;
+            }
+
+            const promises = targets.map(f =>
+                getImage(f.FormUUID, supabase).then(url => ({ id: f.FormUUID, url })).catch(() => ({ id: f.FormUUID, url: null }))
+            );
+
+            try {
+                const results = await Promise.all(promises);
+                if (!mounted) return;
+
+                let updated = false;
+                for (const r of results) {
+                    if (r.url) {
+                        imageCacheRef.current[r.id] = r.url;
+                        updated = true;
+                    } else {
+                        imageCacheRef.current[r.id] = '';
+                    }
+                }
+
+                if (updated) {
+                    const imageMap: Record<string, string> = {};
+                    Object.entries(imageCacheRef.current).forEach(([k, v]) => { if (v) imageMap[k] = v; });
+                    setFormImages(imageMap);
+                }
+            } finally {
+                // 初回実行はここで完了フラグを立てる
+                imagesInitializedRef.current = true;
+            }
+        };
+
+        fetchImages();
+
+        return () => { mounted = false; };
+    }, [forms, supabase]);
 
 
     const handleClick = (formId: string) => {
@@ -269,10 +322,11 @@ export default function Project() {
                                                     onClick={() => handleClick(form.FormUUID)}
                                                 >
                                                     <Avatar
+                                                        src={formImages[form.FormUUID] || undefined}
                                                         variant="square"
                                                         sx={{width: 100, height: 100, bgcolor: 'primary.light'}}
                                                     >
-                                                        📝
+                                                        {!formImages[form.FormUUID] && "📝"}
                                                     </Avatar>
                                                     <CardContent sx={{flex: 1}}>
                                                         <Typography variant="subtitle1">{form.FormName}</Typography>

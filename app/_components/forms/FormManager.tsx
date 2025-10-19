@@ -45,7 +45,7 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
                 }
 
                 if (formData && formData.length > 0) {
-                    const formIds = formData.map(form => form.FormUUID)
+                    const formIds = formData.map((form: { FormUUID: string }) => form.FormUUID)
                     setAvailableFormIds(formIds)
                     console.log('有効なForm一覧:', formData)
 

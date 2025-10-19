@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, Typography, CircularProgress, Alert} from "@mui/material";
-import { createAnonClient } from "@/utils/supabase/anonClient";
 import Header from "@/app/_components/Header";
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
 
 export default function AnswerCompletePage() {
     const params = useParams();
@@ -13,12 +13,14 @@ export default function AnswerCompletePage() {
     const [formData, setFormData] = useState<{ FormMessage?: string; FormName?: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
     useEffect(() => {
+        if(!supabase || authLoading) return;
+
         const fetchForm = async () => {
             setLoading(true);
             try {
-                const supabase = createAnonClient();
                 const { data, error } = await supabase
                     .from("Form")
                     .select("FormMessage, FormName")
@@ -37,7 +39,7 @@ export default function AnswerCompletePage() {
             }
         };
         if (projectId) fetchForm();
-    }, [projectId]);
+    }, [projectId, supabase, authLoading]);
 
     if (loading) {
         return (
@@ -64,4 +66,4 @@ export default function AnswerCompletePage() {
             </Box>
         </Box>
     );
-}{/* フォームメッセージ表示 */}
+}

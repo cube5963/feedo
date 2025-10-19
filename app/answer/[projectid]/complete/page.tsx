@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams} from "next/navigation";
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
-import { createAnonClient } from "@/utils/supabase/anonClient";
 import Header from "@/app/_components/Header";
+import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
 export default function AnswerCompletePage() {
     const params = useParams();
@@ -14,10 +15,11 @@ export default function AnswerCompletePage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!supabase || authLoading) return;
+
         const fetchForm = async () => {
             setLoading(true);
             try {
-                const supabase = createAnonClient();
                 const { data, error } = await supabase
                     .from("Form")
                     .select("FormMessage, FormName")
@@ -35,8 +37,9 @@ export default function AnswerCompletePage() {
                 setLoading(false);
             }
         };
-        if (projectId) fetchForm();
-    }, [projectId]);
+        if (projectId)
+            fetchForm();
+    }, [projectId, supabase, authLoading]);
 
     if (loading) {
         return (

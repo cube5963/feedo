@@ -22,7 +22,6 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {createClient} from '@/utils/supabase/client';
 import {Section} from '@/utils/feedo/types';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PeopleIcon from '@mui/icons-material/People';
@@ -44,9 +43,10 @@ interface QuestionStatistics {
 
 interface StatisticsTabProps {
     projectId: string;
+    supabase: any;
 }
 
-export default function StatisticsTab({projectId}: StatisticsTabProps) {
+export default function StatisticsTab({projectId, supabase}: StatisticsTabProps) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [sectionRefreshing, setSectionRefreshing] = useState<Record<string, boolean>>({});
@@ -55,253 +55,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     const [starViewModes, setStarViewModes] = useState<Record<string, 'average' | 'chart'>>({});
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [sectionLastUpdated, setSectionLastUpdated] = useState<Record<string, Date>>({});
-    const [realtimeConnected, setRealtimeConnected] = useState(false);
-    const [realtimeError, setRealtimeError] = useState(false);
-
-    // Supabase Realtimeを使用したリアルタイム統計更新
-    useEffect(() => {
-        const supabase = createClient();
-        let channel: any = null;
-
-        const setupRealtimeSubscription = () => {
-            try {
-                console.log('🔗 Supabase Realtime接続を開始します');
-
-                // Answerテーブルの変更を監視
-                channel = supabase
-                    .channel('statistics-updates')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: '*', // INSERT, UPDATE, DELETE すべてのイベントを監視
-                            schema: 'public',
-                            table: 'Answer',
-                            filter: `FormUUID=eq.${projectId}` // 該当プロジェクトのみ
-                        },
-                        (payload) => {
-                            console.log('📨 回答データが更新されました:', payload);
-                            handleAnswerChange(payload);
-                        }
-                    )
-                    .subscribe((status) => {
-                        console.log('📡 Realtime接続状態:', status);
-                        if (status === 'SUBSCRIBED') {
-                            console.log('✅ Realtime接続が確立されました');
-                            setRealtimeConnected(true);
-                            setRealtimeError(false);
-                        } else if (status === 'CHANNEL_ERROR') {
-                            console.error('❌ Realtime接続エラー');
-                            setRealtimeConnected(false);
-                            setRealtimeError(true);
-                        }
-                    });
-
-            } catch (error) {
-                console.error('❌ Realtime接続エラー:', error);
-                setRealtimeError(true);
-            }
-        };
-
-        // 初期接続
-        setupRealtimeSubscription();
-
-        return () => {
-            if (channel) {
-                console.log('🔌 Realtime接続を切断します');
-                supabase.removeChannel(channel);
-            }
-        };
-    }, [projectId]);
-
-    // 回答データの変更を処理する関数（リアルタイム即座更新）
-    const handleAnswerChange = useCallback(async (payload: any) => {
-        console.log('� 回答データの変更を即座に処理中:', payload);
-
-        const {eventType, new: newRecord, old: oldRecord} = payload;
-
-        if (eventType === 'INSERT' && newRecord) {
-            console.log('➕ 新しい回答が追加されました:', newRecord);
-            // 即座にローカル統計を更新
-            await updateStatisticsInstantly(newRecord.SectionUUID, 'INSERT', newRecord);
-        } else if (eventType === 'UPDATE' && newRecord) {
-            console.log('✏️ 回答が更新されました:', newRecord);
-            await updateStatisticsInstantly(newRecord.SectionUUID, 'UPDATE', newRecord);
-        } else if (eventType === 'DELETE' && oldRecord) {
-            console.log('🗑️ 回答が削除されました:', oldRecord);
-            await updateStatisticsInstantly(oldRecord.SectionUUID, 'DELETE', oldRecord);
-        }
-    }, []);
-
-    // 統計を即座に更新する関数
-    const updateStatisticsInstantly = useCallback(async (sectionUUID: string, eventType: string, record: any) => {
-        console.log(`⚡ セクション ${sectionUUID} の統計を即座に更新中...`);
-
-        try {
-            const supabase = createClient();
-
-            // 最新の回答データを取得（効率的にセクション単位で取得）
-            const {data: responses, error} = await supabase
-                .from('Answer')
-                .select('*')
-                .eq('FormUUID', projectId)
-                .eq('SectionUUID', sectionUUID);
-
-            if (error) {
-                console.error('❌ 回答データ取得エラー:', error);
-                return;
-            }
-
-            // AnswerUUIDでグループ化して重複を除去
-            const uniqueResponsesByAnswerUUID = (responses || []).reduce((acc: any, response: any) => {
-                acc[response.AnswerUUID] = response; // 同じAnswerUUIDの場合は上書き
-                return acc;
-            }, {});
-
-            const uniqueResponses = Object.values(uniqueResponsesByAnswerUUID);
-            console.log(`📈 セクション ${sectionUUID} の最新回答数: ${uniqueResponses.length}`);
-
-            // ローカル状態を即座に更新
-            setStatistics(prev => {
-                if (!prev) return prev;
-
-                const updatedQuestionStats = prev.questionStats.map(qs => {
-                    if (qs.section.SectionUUID === sectionUUID) {
-                        const newStatistics = calculateQuestionStatistics(qs.section, uniqueResponses);
-                        console.log(`🎯 統計即座更新: ${qs.section.SectionName} - ${uniqueResponses.length}件`);
-
-                        return {
-                            ...qs,
-                            responseCount: uniqueResponses.length,
-                            responses: uniqueResponses,
-                            statistics: newStatistics
-                        };
-                    }
-                    return qs;
-                });
-
-                // 全体統計も即座に更新
-                const totalUniqueResponders = new Set<string>();
-                updatedQuestionStats.forEach(qs => {
-                    qs.responses.forEach(response => {
-                        totalUniqueResponders.add(response.AnswerUUID || 'anonymous');
-                    });
-                });
-
-                const updatedStats = {
-                    ...prev,
-                    totalResponses: totalUniqueResponders.size,
-                    responseRate: prev.totalQuestions > 0 ?
-                        (updatedQuestionStats.reduce((sum, q) => sum + q.responseCount, 0) / prev.totalQuestions) : 0,
-                    questionStats: updatedQuestionStats
-                };
-
-                console.log('📊 全体統計即座更新完了:', {
-                    totalResponses: updatedStats.totalResponses,
-                    responseRate: Math.round(updatedStats.responseRate * 100) / 100
-                });
-
-                return updatedStats;
-            });
-
-            // セクション個別の最終更新時刻を記録
-            setSectionLastUpdated(prev => ({
-                ...prev,
-                [sectionUUID]: new Date()
-            }));
-
-            console.log(`✅ セクション ${sectionUUID} の統計を即座に更新完了`);
-
-        } catch (error) {
-            console.error('❌ 統計即座更新エラー:', error);
-            // エラー時はフォールバックとして従来の方法を使用
-            refreshSectionStatistics(sectionUUID);
-        }
-    }, [projectId]);
-
-    // SSEから受信した統計データでセクションを更新する関数（既存のSSE用、互換性のため残す）
-    const updateSectionStatistics = useCallback((sectionUUID: string, newStatistics: any) => {
-        console.log(`📊 セクション ${sectionUUID} の統計を更新:`, newStatistics);
-
-        setStatistics(prev => {
-            if (!prev) return prev;
-
-            const updatedQuestionStats = prev.questionStats.map(qs => {
-                if (qs.section.SectionUUID === sectionUUID) {
-                    console.log(`✅ 統計更新: ${qs.section.SectionName}`);
-                    return {
-                        ...qs,
-                        responseCount: newStatistics.totalResponses,
-                        responses: newStatistics.responses.map((response: any, index: number) => ({
-                            Answer: JSON.stringify(response),
-                            AnswerUUID: `sse-${index}`, // 仮のUUID
-                        })),
-                        statistics: transformSSEStatistics(newStatistics, qs.section)
-                    };
-                }
-                return qs;
-            });
-
-            // 全体の統計も更新
-            const totalResponses = Math.max(
-                prev.totalResponses,
-                newStatistics.totalResponses
-            );
-
-            return {
-                ...prev,
-                totalResponses,
-                questionStats: updatedQuestionStats
-            };
-        });
-
-        // セクション個別の最終更新時刻を記録
-        setSectionLastUpdated(prev => ({
-            ...prev,
-            [sectionUUID]: new Date()
-        }));
-    }, []);
-
-    // SSEから受信した統計データを既存の形式に変換
-    const transformSSEStatistics = (sseStats: any, section: Section) => {
-        switch (section.SectionType) {
-            case 'radio':
-            case 'checkbox':
-                return {
-                    type: 'choice',
-                    counts: sseStats.choices || {},
-                    total: sseStats.totalResponses,
-                    options: Object.keys(sseStats.choices || {})
-                };
-            case 'star':
-                return {
-                    type: 'star',
-                    counts: sseStats.ratingDistribution || {},
-                    average: sseStats.averageRating || 0,
-                    total: sseStats.totalResponses,
-                    maxStars: 5 // デフォルト値
-                };
-            case 'slider':
-                return {
-                    type: 'slider',
-                    average: sseStats.average || 0,
-                    min: sseStats.min || 0,
-                    max: sseStats.max || 0,
-                    total: sseStats.totalResponses,
-                    settings: {min: 0, max: 10, divisions: 5, labels: {min: '最小', max: '最大'}}
-                };
-            case 'text':
-                return {
-                    type: 'text',
-                    total: sseStats.totalResponses,
-                    responses: sseStats.responses || []
-                };
-            default:
-                return {
-                    type: 'unknown',
-                    total: sseStats.totalResponses
-                };
-        }
-    };
 
     useEffect(() => {
         fetchStatistics();
@@ -313,7 +66,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
         setSectionRefreshing(prev => ({...prev, [sectionUUID]: true}));
 
         try {
-            const supabase = createClient();
 
             // 現在の統計から該当セクションの情報を取得
             let section: Section | undefined;
@@ -335,22 +87,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             }
 
             console.log('📊 Fetching answers for section:', sectionUUID);
-
-            // 該当セクションの回答データを取得
-            /*
-            const {data: responses, error: responsesError} = await supabase
-                .from('Answer')
-                .select('*')
-                .eq('FormUUID', projectId)
-                .eq('SectionUUID', sectionUUID);
-
-            if (responsesError) {
-                console.error('❌ セクション回答データ取得エラー:', responsesError);
-                return;
-            }
-
-            const responseData = responses || [];
-             */
 
             const {data: responses, error: responsesError} = await supabase
                 .from('Answer')
@@ -376,8 +112,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             console.log(`📈 Found ${responseData.length} responses for section`);
 
             // 統計を再計算
-            //const newStatistics = calculateQuestionStatistics(section, responseData);
-            // 統計を再計算
             const newStatistics = calculateQuestionStatistics(section, uniqueResponses);
             console.log('🧮 Calculated new statistics:', newStatistics);
 
@@ -388,14 +122,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 const updatedQuestionStats = prev.questionStats.map(qs => {
                     if (qs.section.SectionUUID === sectionUUID) {
                         console.log(`✅ Updating statistics for section: ${qs.section.SectionName}`);
-                        /*
-                        return {
-                            ...qs,
-                            responseCount: responseData.length,
-                            responses: responseData,
-                            statistics: newStatistics
-                        };
-                         */
                         return {
                             ...qs,
                             responseCount: uniqueResponses.length,
@@ -455,18 +181,29 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     const fetchStatistics = async () => {
         try {
             setLoading(true);
-            const supabase = createClient();
 
             // セクション一覧を取得
-            const {data: sections, error: sectionsError} = await supabase
+            const { data: sectionsData, error: sectionsError } = await supabase
                 .from('Section')
                 .select('*')
                 .eq('FormUUID', projectId)
                 .eq('Delete', false)
-                .order('SectionOrder', {ascending: true});
+                .order('SectionOrder', { ascending: true });
 
             if (sectionsError) {
                 setError('質問データの取得に失敗しました');
+                return;
+            }
+
+            const sections = (sectionsData || []) as Section[];
+
+            if (sections.length === 0) {
+                setStatistics({
+                    totalResponses: 0,
+                    totalQuestions: 0,
+                    responseRate: 0,
+                    questionStats: []
+                });
                 return;
             }
 
@@ -479,42 +216,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 });
                 return;
             }
-
-            // 各質問の回答データを取得
-            /*
-            const questionStats: QuestionStatistics[] = [];
-            let totalUniqueResponders = new Set<string>();
-
-            for (const section of sections) {
-                const {data: responses, error: responsesError} = await supabase
-                    .from('Answer')
-                    .select('*')
-                    .eq('FormUUID', projectId)
-                    .eq('SectionUUID', section.SectionUUID);
-
-                if (responsesError) {
-                    console.error('回答データ取得エラー:', responsesError);
-                    continue;
-                }
-
-                const responseData = responses || [];
-
-                // 回答者のユニークIDを追加
-                responseData.forEach(response => {
-                    totalUniqueResponders.add(response.AnswerUUID || 'anonymous');
-                });
-
-                // 質問タイプに応じた統計を計算
-                const statistics = calculateQuestionStatistics(section, responseData);
-
-                questionStats.push({
-                    section,
-                    responseCount: responseData.length,
-                    responses: responseData,
-                    statistics
-                });
-            }
-            */
 
             // 全ての回答を一度に取得
             const {data: allResponses, error: responsesError} = await supabase
@@ -540,10 +241,12 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             const totalUniqueResponders = Object.keys(responsesByAnswerUUID).length;
 
             // 各質問の統計を計算
-            const questionStats: QuestionStatistics[] = sections.map(section => {
+            const questionStats: QuestionStatistics[] = sections.map((section: Section) => {
+                const sectionId = section.SectionUUID;
+
                 const sectionResponses = Object.values(responsesByAnswerUUID)
-                    .map((answers: any) => answers[section.SectionUUID])
-                    .filter(response => response !== undefined);
+                    .map((answers: any) => sectionId ? answers[sectionId] : undefined)
+                    .filter((response): response is any => response !== undefined);
 
                 const statistics = calculateQuestionStatistics(section, sectionResponses);
 
@@ -554,15 +257,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                     statistics
                 };
             });
-
-            /*
-            const statisticsData: StatisticsData = {
-                totalResponses: totalUniqueResponders.size,
-                totalQuestions: sections.length,
-                responseRate: sections.length > 0 ? (questionStats.reduce((sum, q) => sum + q.responseCount, 0) / sections.length) : 0,
-                questionStats
-            };
-             */
 
             const statisticsData: StatisticsData = {
                 totalResponses: totalUniqueResponders,
@@ -600,15 +294,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
             };
 
             const sectionDesc = parseJsonSafely(section.SectionDesc, {});
-            /*
-            const answers = responses.map(r => {
-                try {
-                    return JSON.parse(r.Answer);
-                } catch {
-                    return r.Answer;
-                }
-            });
-             */
             const answers = responses.map(r => {
                 try {
                     const parsed = JSON.parse(r.Answer);
@@ -688,7 +373,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
         });
 
         const average = answers.length > 0 ?
-            //answers.reduce((sum, answer) => sum + (typeof answer === 'number' ? answer : 0), 0) / answers.length : 0;
             answers.reduce((sum, answer) => sum + answer, 0) / answers.length : 0;
 
         return {
@@ -701,7 +385,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
     };
 
     const calculateSliderStatistics = (answers: number[], settings: any) => {
-        //const validAnswers = answers.filter(answer => typeof answer === 'number');
         const validAnswers = answers;
         const average = validAnswers.length > 0 ?
             validAnswers.reduce((sum, answer) => sum + answer, 0) / validAnswers.length : 0;
@@ -1321,25 +1004,6 @@ export default function StatisticsTab({projectId}: StatisticsTabProps) {
                 </Box>
             </Box>
 
-            {/* リアルタイム更新の通知 */}
-            {!loading && !error && (
-                <Alert
-                    severity={realtimeConnected ? "success" : realtimeError ? "warning" : "info"}
-                    sx={{
-                        mb: 3,
-                        bgcolor: realtimeConnected ? '#e8f5e8' : realtimeError ? '#fff3e0' : '#e3f2fd',
-                        borderLeft: `4px solid ${realtimeConnected ? '#4caf50' : realtimeError ? '#ff9800' : '#1976d2'}`
-                    }}
-                >
-                    {realtimeConnected ? (
-                        <> ✅ リアルタイム統計更新が有効です。新しい回答が追加されると自動的に統計が更新されます。</>
-                    ) : realtimeError ? (
-                        <>🟡 リアルタイム接続に問題があります。手動更新ボタンで最新データを取得してください。</>
-                    ) : (
-                        <>🔄 リアルタイム統計機能を初期化中です...</>
-                    )}
-                </Alert>
-            )}
 
             {/* 概要統計 */}
             <Box sx={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 4}}>

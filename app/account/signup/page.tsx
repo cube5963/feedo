@@ -31,7 +31,7 @@ export default function SignUp() {
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!supabase) {
+        if (!supabase || authLoading) {
             setError("認証システムの初期化中です。しばらくお待ちください。");
             return;
         }

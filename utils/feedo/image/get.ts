@@ -11,4 +11,4 @@ export async function getImage(projectId: string, supabase: any): Promise<string
     }
 
     return `${data.signedUrl}&v=${Date.now()}`;
-};
+}
