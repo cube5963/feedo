@@ -1,3 +1,4 @@
+"use client"
 import {Avatar, Box, Button, Divider, FormControl, FormLabel, Paper, TextField, Typography} from "@mui/material";
 import {useEffect, useState} from "react";
 import {getFormName} from "@/utils/feedo/form/name/getName";
@@ -11,6 +12,7 @@ import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {deleteImage} from "@/utils/feedo/image/delete";
 import {uploadImage} from "@/utils/feedo/image/upload";
+import {getImage} from "@/utils/feedo/image/get";
 
 interface SettingsTabProps {
     formId: string;
@@ -26,30 +28,35 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
     const [formMessage, setFormMessage] = useState("")
     const [image, setImage] = useState<string | null>(null)
 
+    // 初期化処理（フォーム名と画像を取得）
     useEffect(() => {
         const initialize = async () => {
             try {
+                // フォーム名取得
                 const formName = await getFormName(formId, supabase);
                 if (formName == null) {
                     router.push('/project');
                     return;
                 }
                 setFormTitle(formName || '');
+
+                // プロジェクト画像取得
+                const imageUrl = await getImage(formId, supabase);
+                if (imageUrl) setImage(imageUrl);
+
             } catch (error) {
-                return
+                console.error("SettingsTab 初期化エラー:", error);
             }
         }
 
-        initialize()
-    },[formId, supabase])
+        initialize();
+    }, [formId, supabase]);
 
-
-    // フォーム名を更新する関数
+    // フォーム名を更新
     const handleUpdateFormName = async (newFormName: string) => {
         if (!newFormName.trim() || !supabase) return
 
         setLoading(true)
-
         const res = await updateFormName(formId, newFormName, supabase)
 
         if(!res){
@@ -62,7 +69,7 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
         setLoading(false)
     }
 
-    // フォーム終了メッセージを更新する関数
+    // フォーム終了メッセージを更新
     const handleUpdateFormMessage = async (newFormMessage: string) => {
         if (!supabase) return;
 
@@ -76,15 +83,14 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
 
         setMessage('アンケート終了メッセージを更新しました')
         setTimeout(() => setMessage(''), 3000)
+        setLoading(false)
     }
 
-
-    // アンケート回答ページに移動する関数
+    // アンケート回答ページへ
     const handleAnswer = async () => {
         if (!supabase) return;
 
         const uuid = await getFirstSection(formId, supabase)
-
         if(uuid === null){
             setMessage('質問が見つかりません。まず質問を作成してください。')
             return
@@ -93,12 +99,11 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
         router.push(`/answer/${formId}/${uuid}`)
     }
 
-    // プレビューページに移動する関数
+    // プレビューページへ
     const handlePreview = async () => {
         if (!supabase) return;
 
         const uuid = await getFirstSection(formId, supabase)
-
         if(uuid === null){
             setMessage('質問が見つかりません。まず質問を作成してください。')
             return
@@ -107,11 +112,11 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
         router.push(`/answer/preview/${formId}/${uuid}`)
     }
 
+    // 画像削除
     const handleImageDelete = async () => {
         if (!supabase) return;
 
         const res = await deleteImage(formId, supabase)
-
         if (!res) {
             setMessage("削除に失敗しました。");
             return;
@@ -121,19 +126,19 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
         setMessage("画像を削除しました。");
     }
 
+    // 画像アップロード
     const handleImageUpload = async () => {
         if(!supabase) return
 
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/'
+        input.accept = 'image/*'
 
         input.onchange = async () => {
             if (!input.files || input.files.length === 0) return;
-
             const file = input.files[0];
-            const url = await uploadImage(formId, file, supabase)
 
+            const url = await uploadImage(formId, file, supabase)
             if (url) {
                 setImage(url);
                 setMessage("アップロードに成功しました。");
@@ -143,7 +148,6 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
         };
 
         input.click();
-
     }
 
     return (
@@ -152,17 +156,8 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
                 プロジェクト設定
             </Typography>
 
-
-            {/* プロジェクト設定 */}
-            <Paper
-                elevation={2}
-                sx={{
-                    p: 4,
-                    mb: 4,
-                    borderRadius: 2,
-                    border: '1px solid #e0e0e0'
-                }}
-            >
+            {/* 基本設定 */}
+            <Paper elevation={2} sx={{p: 4, mb: 4, borderRadius: 2, border: '1px solid #e0e0e0'}}>
                 <Typography variant="subtitle1" sx={{mb: 3, fontWeight: 600}}>
                     基本設定
                 </Typography>
@@ -176,11 +171,7 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
                         onChange={(e) => setFormTitle(e.target.value)}
                         onBlur={() => handleUpdateFormName(formTitle)}
                         inputProps={{maxLength: 50}}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                handleUpdateFormName(formTitle)
-                            }
-                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateFormName(formTitle) }}
                         disabled={loading}
                         placeholder="わかりやすいプロジェクト名を入力してください"
                     />
@@ -188,10 +179,7 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
                         variant="outlined"
                         startIcon={<VisibilityIcon/>}
                         onClick={handlePreview}
-                        sx={{
-                            minWidth: 120,
-                            height: 56  // TextFieldと同じ高さ
-                        }}
+                        sx={{minWidth: 120, height: 56}}
                     >
                         プレビュー
                     </Button>
@@ -199,10 +187,7 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
                         variant="contained"
                         startIcon={<QuestionAnswerIcon/>}
                         onClick={handleAnswer}
-                        sx={{
-                            minWidth: 140,
-                            height: 56  // TextFieldと同じ高さ
-                        }}
+                        sx={{minWidth: 140, height: 56}}
                     >
                         アンケート回答
                     </Button>
@@ -215,59 +200,27 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
                     その他の設定
                 </Typography>
 
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    <FormControl component="fieldset">
-                        <FormLabel style={{fontWeight: 'bold', color: 'black'}}>アンケート終了後のメッセージ</FormLabel>
-                        <Box sx={{mt: 1}}>
-                            <Typography variant="body2" color="text.secondary">
-                                アンケートが終了したときに表示されるメッセージを設定できます。
-                            </Typography>
-                            <TextField
-                                variant="outlined"
-                                fullWidth
-                                multiline
-                                minRows={2}
-                                maxRows={4}
-                                placeholder="例: ご協力ありがとうございました！"
-                                sx={{mt: 1}}
-                                value={formMessage}
-                                onChange={(e) => setFormMessage(e.target.value)}
-                                onBlur={() => handleUpdateFormMessage(formMessage)}
-                                inputProps={{maxLength: 200}}
-                                disabled={loading}
-                            />
-                        </Box>
-                    </FormControl>
-
-                    <FormControl component="fieldset">
-                        <FormLabel component="legend">回答の公開設定</FormLabel>
-                        <Box sx={{mt: 1}}>
-                            <Typography variant="body2" color="text.secondary">
-                                回答結果の表示設定を選択してください
-                            </Typography>
-                        </Box>
-                    </FormControl>
-
-                    <FormControl component="fieldset">
-                        <FormLabel component="legend">アクセス制限</FormLabel>
-                        <Box sx={{mt: 1}}>
-                            <Typography variant="body2" color="text.secondary">
-                                プロジェクトへのアクセス権限を設定できます
-                            </Typography>
-                        </Box>
-                    </FormControl>
-                </Box>
+                <FormControl component="fieldset" sx={{mb: 2}}>
+                    <FormLabel component="legend">アンケート終了後のメッセージ</FormLabel>
+                    <TextField
+                        variant="outlined"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        maxRows={4}
+                        placeholder="例: ご協力ありがとうございました！"
+                        sx={{mt: 1}}
+                        value={formMessage}
+                        onChange={(e) => setFormMessage(e.target.value)}
+                        onBlur={() => handleUpdateFormMessage(formMessage)}
+                        inputProps={{maxLength: 200}}
+                        disabled={loading}
+                    />
+                </FormControl>
             </Paper>
-            {/* プロジェクト設定（デザインのみ） */}
-            <Paper
-                elevation={2}
-                sx={{
-                    p: 4,
-                    mb: 4,
-                    borderRadius: 2,
-                    border: '1px solid #e0e0e0'
-                }}
-            >
+
+            {/* プロジェクト画像 */}
+            <Paper elevation={2} sx={{p: 4, mb: 4, borderRadius: 2, border: '1px solid #e0e0e0'}}>
                 <Typography variant="subtitle1" sx={{mb: 3, fontWeight: 600}}>
                     プロジェクト画像
                 </Typography>

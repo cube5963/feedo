@@ -14,8 +14,8 @@ import {
     Typography,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {useRouter} from 'next/navigation'; // App Router 用
-import Header from '@/app/_components/Header'
+import {useRouter} from 'next/navigation';
+import Header from '@/app/_components/Header';
 import { useEffect, useState, useRef } from 'react';
 import {createForm} from '@/utils/feedo/form/create';
 import {fixAIFormDates, formatSafeDate} from "@/utils/feedo/fixTime";
@@ -56,58 +56,27 @@ export default function Project() {
                     return;
                 }
 
-                // ログインユーザーのフォームのみを取得
                 const {data, error} = await supabase
                     .from('Form')
                     .select('*')
                     .eq('Delete', false)
                     .order('CreatedAt', {ascending: false});
 
-
                 if (error) {
-                    // UserIDカラムが存在しない場合は空のリストを表示
-                    if (error.code === '42703' || error.message?.includes('UserID')) {
-                        setForms([]);
-                    } else {
-                        setForms([]);
-                    }
+                    setForms([]);
                 } else {
-                    // 日付の問題をデバッグするためのログ出力
+                    // AIフォームの日付修正
                     if (data && data.length > 0) {
                         const formsNeedingDateFix: any[] = [];
-
-                        data.forEach((form: {
-                            FormName: string | string[];
-                            ImgID: string;
-                            FormUUID: any;
-                            CreatedAt: string | number | Date;
-                            UpdatedAt: string | number | Date;
-                            UserID: any;
-                        }) => {
-                            const isAICreated = form.FormName?.includes('AI') || form.ImgID === '' || !form.ImgID;
-                            console.log(`フォーム ${form.FormName} ${isAICreated ? '(AI作成可能性)' : '(通常作成)'}:`, {
-                                FormUUID: form.FormUUID,
-                                CreatedAt: form.CreatedAt,
-                                CreatedAtType: typeof form.CreatedAt,
-                                CreatedAtParsed: form.CreatedAt ? new Date(form.CreatedAt) : 'null',
-                                UpdatedAt: form.UpdatedAt,
-                                UpdatedAtType: typeof form.UpdatedAt,
-                                UpdatedAtParsed: form.UpdatedAt ? new Date(form.UpdatedAt) : 'null',
-                                UserID: form.UserID
-                            });
-
-                            // 日付が問題のあるフォームを収集
-                            const hasDateIssue = !form.CreatedAt ||
-                                !form.UpdatedAt ||
+                        data.forEach((form: any) => {
+                            const isAICreated = form.FormName?.includes('AI');
+                            const hasDateIssue = !form.CreatedAt || !form.UpdatedAt ||
                                 new Date(form.CreatedAt).getFullYear() < 1990 ||
                                 new Date(form.UpdatedAt).getFullYear() < 1990;
 
-                            if (hasDateIssue && isAICreated) {
-                                formsNeedingDateFix.push(form);
-                            }
+                            if (hasDateIssue && isAICreated) formsNeedingDateFix.push(form);
                         });
 
-                        // 問題のあるAIフォームがある場合、自動修正を提案
                         if (formsNeedingDateFix.length > 0) {
                             await fixAIFormDates(formsNeedingDateFix, supabase);
                         }
@@ -124,23 +93,30 @@ export default function Project() {
         checkUserAndFetchForms();
     }, [router, supabase, authLoading, isAuth, user]);
 
+    // 画像取得 useEffect
     useEffect(() => {
         if (!supabase || forms.length === 0) return;
-        // 初回に既に実行済みなら何もしない
         if (imagesInitializedRef.current) return;
 
         let mounted = true;
 
         const fetchImages = async () => {
-            const targets = forms.filter(f => f.ImgID && !imageCacheRef.current[f.FormUUID]);
+            // ImgIDが空でも取得する
+            const targets = forms.filter(f => !imageCacheRef.current[f.FormUUID]);
+            console.log("fetchImages targets:", targets);
+
             if (targets.length === 0) {
-                // 取得対象が無ければフラグだけ立てて終了（初回完了扱い）
                 imagesInitializedRef.current = true;
                 return;
             }
 
             const promises = targets.map(f =>
-                getImage(f.FormUUID, supabase).then(url => ({ id: f.FormUUID, url })).catch(() => ({ id: f.FormUUID, url: null }))
+                getImage(f.FormUUID, supabase)
+                    .then(url => {
+                        console.log(`getImage result for ${f.FormUUID}:`, url);
+                        return { id: f.FormUUID, url };
+                    })
+                    .catch(() => ({ id: f.FormUUID, url: null }))
             );
 
             try {
@@ -159,11 +135,13 @@ export default function Project() {
 
                 if (updated) {
                     const imageMap: Record<string, string> = {};
-                    Object.entries(imageCacheRef.current).forEach(([k, v]) => { if (v) imageMap[k] = v; });
+                    Object.entries(imageCacheRef.current).forEach(([k, v]) => {
+                        if (v) imageMap[k] = v;
+                    });
                     setFormImages(imageMap);
+                    console.log("Updated formImages:", imageMap);
                 }
             } finally {
-                // 初回実行はここで完了フラグを立てる
                 imagesInitializedRef.current = true;
             }
         };
@@ -173,13 +151,10 @@ export default function Project() {
         return () => { mounted = false; };
     }, [forms, supabase]);
 
-
     const handleClick = (formId: string) => {
-        // Supabaseフォームのページに遷移
         router.push(`/project/${formId}`);
     };
 
-    // 新規フォーム作成関数
     const handleCreateNewForm = async (ai: boolean) => {
         if (!isAuth || !supabase) {
             router.push('/account/signin');
@@ -202,31 +177,20 @@ export default function Project() {
         }
     };
 
-    // フォーム削除関数
     const handleDeleteForm = async (formId: string, formName: string, event: React.MouseEvent) => {
         event.stopPropagation();
-
         if (!isAuth) {
-            console.log('未認証のユーザー - サインインページにリダイレクト');
             router.push('/account/signin');
             return;
         }
 
-        setLoading(true)
-
-        if (!confirm(`「${formName}」を削除しますか？\nこのフォーム内のすべてのセクションも同時に削除されます。`)) {
-            return;
-        }
+        if (!confirm(`「${formName}」を削除しますか？\nこのフォーム内のすべてのセクションも同時に削除されます。`)) return;
 
         setLoading(true);
 
         try {
-
             if (await deleteForm(formId, supabase))
                 setForms(prev => prev.filter(form => form.FormUUID !== formId));
-
-            setLoading(false)
-
         } catch (error: any) {
             alert(`フォームの削除に失敗しました: ${error?.message || 'Unknown error'}`);
         } finally {
@@ -236,27 +200,19 @@ export default function Project() {
 
     return (
         <Box sx={{minHeight: '100vh', backgroundColor: '#f8f9fa'}}>
-            {/* ヘッダー */}
-            <Header
-                title="プロジェクト一覧"
-                showBackButton={false}
-                showActions={false}
-            />
+            <Header title="プロジェクト一覧" showBackButton={false} showActions={false} />
 
             <Box sx={{maxWidth: 500, margin: 'auto', pt: 10, pb: 4, px: 2}}>
-                {/* 認証確認中の表示 */}
-                {(!isAuth && loadingForms) ? (
+                {(!isAuth && loadingForms) && (
                     <Box sx={{textAlign: 'center', py: 4}}>
                         <Typography variant="body2" color="text.secondary">
                             認証情報を確認中...
                         </Typography>
                     </Box>
-                ) : null}
+                )}
 
-                {/* 認証済みの場合のコンテンツ */}
-                {isAuth ? (
+                {isAuth && (
                     <>
-                        {/* ユーザー情報表示 */}
                         {user && (
                             <Box sx={{mb: 2, p: 2, bgcolor: 'info.light', borderRadius: 1}}>
                                 <Typography variant="body2" color="info.contrastText">
@@ -265,7 +221,6 @@ export default function Project() {
                             </Box>
                         )}
 
-                        {/* 新規作成 */}
                         <Box sx={{display: 'flex', alignItems: 'center', mb: 3, mt: 3}}>
                             <Button
                                 variant="outlined"
@@ -283,7 +238,6 @@ export default function Project() {
                             </Box>
                         </Box>
 
-                        {/* アンケート一覧 */}
                         {loadingForms ? (
                             <Box sx={{textAlign: 'center', py: 4}}>
                                 <Typography variant="body2" color="text.secondary">
@@ -303,21 +257,14 @@ export default function Project() {
                                     </Box>
                                 ) : (
                                     <>
-                                        {/* ユーザーのフォーム表示 */}
                                         {forms.map((form) => (
-                                            <Box
-                                                key={`form-${form.FormUUID}`}
-                                                sx={{width: '100%', mb: 2}}
-                                            >
+                                            <Box key={`form-${form.FormUUID}`} sx={{width: '100%', mb: 2}}>
                                                 <Card
                                                     sx={{
                                                         display: 'flex',
                                                         width: '100%',
                                                         cursor: 'pointer',
-                                                        '&:hover': {
-                                                            boxShadow: 2,
-                                                            bgcolor: 'action.hover'
-                                                        }
+                                                        '&:hover': { boxShadow: 2, bgcolor: 'action.hover' }
                                                     }}
                                                     onClick={() => handleClick(form.FormUUID)}
                                                 >
@@ -343,9 +290,7 @@ export default function Project() {
                                                             onClick={(e) => handleDeleteForm(form.FormUUID, form.FormName, e)}
                                                             disabled={loading}
                                                             title="このフォームを削除"
-                                                            sx={{
-                                                                '&:hover': {bgcolor: 'error.light', color: 'white'}
-                                                            }}
+                                                            sx={{'&:hover': {bgcolor: 'error.light', color: 'white'}}}
                                                         >
                                                             <DeleteIcon/>
                                                         </IconButton>
@@ -358,8 +303,9 @@ export default function Project() {
                             </>
                         )}
                     </>
-                ) : null}
+                )}
             </Box>
+
             <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
                 <DialogTitle>新規作成</DialogTitle>
                 <DialogContent>
@@ -369,19 +315,13 @@ export default function Project() {
                     <Button
                         variant="contained"
                         color="primary"
-                        onClick={() => {
-                            setCreateOpen(false);
-                            handleCreateNewForm(true)
-                        }}
+                        onClick={() => { setCreateOpen(false); handleCreateNewForm(true) }}
                     >
                         はい
                     </Button>
                     <Button
                         variant="outlined"
-                        onClick={() => {
-                            setCreateOpen(false);
-                            handleCreateNewForm(false);
-                        }}
+                        onClick={() => { setCreateOpen(false); handleCreateNewForm(false); }}
                     >
                         いいえ
                     </Button>
