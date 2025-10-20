@@ -7,9 +7,9 @@ import {Section} from '@/utils/feedo/types';
 import QuestionComponent from '@/app/answer/_components/QuestionComponent';
 import ProgressBar from '@/app/answer/_components/ProgressBar';
 import AnswerNavigationButtons from '@/app/answer/_components/AnswerNavigationButtons';
-import Header from '@/app/_components/Header';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import {SupabaseAuthClient} from "@/utils/supabase/user/user";
+import {isFirstAnswer} from "@/utils/feedo/answer/isFirst";
+import Header from "@/app/_components/Header";
 
 interface FormData {
     FormUUID: string;
@@ -48,27 +48,12 @@ export default function AnswerQuestionPage() {
                     .eq('Delete', false)
                     .single();
 
-                if (formData && formData.singleResponse === true) {
-                    const fpPromise = FingerprintJS.load();
-                    await (async () => {
-                        const fp = await fpPromise;
-                        const result = await fp.get();
-                        const visitorId = result.visitorId;
-
-                        const res = await fetch(`/api/fingerprint?form_id=${projectId}&fingerprint=${visitorId}`);
-                        const data = await res.json();
-                        if (data.error) throw data.error;
-
-                        if (data.result === true) {
-                            const answerUserFromCookie = await getCookie('answer_user');
-                            const answerUserFromLocalStorage = localStorage.getItem('answer_user');
-
-                            if (!!(answerUserFromCookie || answerUserFromLocalStorage)) {
-                                setError('すでに回答済みです');
-                            }
-                        }
-                    })();
+                /*
+                if(!await isFirstAnswer(projectId)){
+                    setError('すでに回答済みです');
                 }
+
+                 */
 
                 if (formError) {
                     setError('フォームが見つかりません');
@@ -120,18 +105,6 @@ export default function AnswerQuestionPage() {
         handleAnswerUUID();
     }, [projectId, questionId, currentIndex, supabase, authLoading, answerUUID]);
 
-
-    const getCookie = async (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) {
-            const cookieValue = parts.pop();
-            if (cookieValue) {
-                return cookieValue.split(';').shift();
-            }
-        }
-        return null;
-    }
 
     const handleAnswer = (answer: any) => {
         if (currentSection) {
@@ -230,7 +203,7 @@ export default function AnswerQuestionPage() {
         }
 
         setIsSubmitting(false);
-        
+
         router.push(`/answer/${projectId}/complete`);
     };
 

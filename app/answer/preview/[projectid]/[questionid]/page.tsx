@@ -104,14 +104,14 @@ export default function PreviewQuestionPage() {
     const handlePrevious = () => {
         if (currentIndex > 0) {
             const prevSection = sections[currentIndex - 1];
-            router.push(`/preview/${projectId}/${prevSection.SectionUUID}`);
+            router.push(`/answer/preview/${projectId}/${prevSection.SectionUUID}`);
         }
     };
 
     const handleNext = () => {
         if (currentIndex < sections.length - 1) {
             const nextSection = sections[currentIndex + 1];
-            router.push(`/preview/${projectId}/${nextSection.SectionUUID}`);
+            router.push(`/answer/preview/${projectId}/${nextSection.SectionUUID}`);
         }
     };
 

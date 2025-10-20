@@ -170,7 +170,7 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
 
             const {error} = await supabase
                 .from('Section')
-                .update({Delete: true, UpdatedAt: new Date().toISOString()})
+                .delete()
                 .eq('SectionUUID', sectionId)
                 .eq('Delete', false)
 

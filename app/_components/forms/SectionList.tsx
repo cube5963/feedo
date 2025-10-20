@@ -6,7 +6,6 @@ import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrateg
 import {Box, Typography} from '@mui/material'
 
 
-
 export function SectionList({
                                 sections,
                                 currentFormId,
