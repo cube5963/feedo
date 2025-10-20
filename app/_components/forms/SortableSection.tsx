@@ -1,17 +1,9 @@
 "use client"
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Section } from './types'
-import { SectionEditor } from './SectionEditor'
-import { 
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    Typography,
-    Box,
-    IconButton,
-    Chip
-} from '@mui/material'
+import {useSortable} from '@dnd-kit/sortable'
+import {CSS} from '@dnd-kit/utilities'
+import {SortableSectionProps} from '@/utils/feedo/types'
+import {SectionEditor} from './SectionEditor'
+import {Accordion, AccordionDetails, AccordionSummary, Box, Chip, IconButton, Typography} from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -22,13 +14,7 @@ import StarIcon from '@mui/icons-material/Star'
 import TuneIcon from '@mui/icons-material/Tune'
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
 
-interface SortableSectionProps {
-    section: Section
-    onDelete: (id: string) => void
-    onUpdate: (sectionId: string, updatedSection: Partial<Section>) => void
-}
-
-export function SortableSection({ section, onDelete, onUpdate }: SortableSectionProps) {
+export function SortableSection({section, onDelete, onUpdate}: SortableSectionProps) {
     const {
         attributes,
         listeners,
@@ -36,7 +22,7 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: section.SectionUUID! })
+    } = useSortable({id: section.SectionUUID!})
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -46,25 +32,39 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
 
     const getTypeIcon = (type: string) => {
         switch (type) {
-            case 'radio': return <RadioButtonCheckedIcon sx={{ color: '#1976d2', fontSize: 20 }} />
-            case 'checkbox': return <CheckBoxIcon sx={{ color: '#1976d2', fontSize: 20 }} />
-            case 'text': return <TextFieldsIcon sx={{ color: '#1976d2', fontSize: 20 }} />
-            case 'star': return <StarIcon sx={{ color: '#ffc107', fontSize: 20 }} />
-            case 'two_choice': return <ThumbsUpDownIcon sx={{ color: '#4caf50', fontSize: 20 }} />
-            case 'slider': return <TuneIcon sx={{ color: '#9c27b0', fontSize: 20 }} />
-            default: return <TextFieldsIcon sx={{ color: '#757575', fontSize: 20 }} />
+            case 'radio':
+                return <RadioButtonCheckedIcon sx={{color: '#1976d2', fontSize: 20}}/>
+            case 'checkbox':
+                return <CheckBoxIcon sx={{color: '#1976d2', fontSize: 20}}/>
+            case 'text':
+                return <TextFieldsIcon sx={{color: '#1976d2', fontSize: 20}}/>
+            case 'star':
+                return <StarIcon sx={{color: '#ffc107', fontSize: 20}}/>
+            case 'two_choice':
+                return <ThumbsUpDownIcon sx={{color: '#4caf50', fontSize: 20}}/>
+            case 'slider':
+                return <TuneIcon sx={{color: '#9c27b0', fontSize: 20}}/>
+            default:
+                return <TextFieldsIcon sx={{color: '#757575', fontSize: 20}}/>
         }
     }
 
     const getTypeLabel = (type: string) => {
         switch (type) {
-            case 'radio': return 'ラジオボタン'
-            case 'checkbox': return 'チェックボックス'
-            case 'text': return '自由記述'
-            case 'star': return '星評価'
-            case 'two_choice': return '二択'
-            case 'slider': return 'スライダー'
-            default: return type
+            case 'radio':
+                return 'ラジオボタン'
+            case 'checkbox':
+                return 'チェックボックス'
+            case 'text':
+                return '自由記述'
+            case 'star':
+                return '星評価'
+            case 'two_choice':
+                return '二択'
+            case 'slider':
+                return 'スライダー'
+            default:
+                return type
         }
     }
 
@@ -73,12 +73,12 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
             ref={setNodeRef}
             style={style}
             data-section-id={section.SectionUUID}
-            sx={{ 
+            sx={{
                 mb: 2,
                 border: isDragging ? '2px dashed #1976d2' : '1px solid #e0e0e0',
                 borderRadius: 2,
                 boxShadow: isDragging ? '0 8px 32px rgba(25, 118, 210, 0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
-                '&:before': { display: 'none' },
+                '&:before': {display: 'none'},
                 '&:hover': {
                     boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
                 },
@@ -90,13 +90,13 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                 }
             }}
         >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box 
-                    {...attributes} 
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                <Box
+                    {...attributes}
                     {...listeners}
-                    sx={{ 
+                    sx={{
                         cursor: 'grab',
-                        '&:active': { cursor: 'grabbing' },
+                        '&:active': {cursor: 'grabbing'},
                         color: 'text.secondary',
                         display: 'flex',
                         alignItems: 'center',
@@ -110,15 +110,15 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                         transition: 'all 0.2s ease-in-out'
                     }}
                 >
-                    <DragIndicatorIcon />
+                    <DragIndicatorIcon/>
                 </Box>
-                
+
                 <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{ 
+                    expandIcon={<ExpandMoreIcon/>}
+                    sx={{
                         flex: 1,
                         minHeight: 80, // AccordionSummaryの最小高さを統一
-                        '& .MuiAccordionSummary-content': { 
+                        '& .MuiAccordionSummary-content': {
                             alignItems: 'center',
                             gap: 2,
                             py: 1,
@@ -129,34 +129,34 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                         }
                     }}
                 >
-                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                    <Box sx={{flex: 1, display: 'flex', alignItems: 'center', gap: 2}}>
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flex: 1}}>
                             {getTypeIcon(section.SectionType)}
-                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            <Typography variant="h6" sx={{fontWeight: 600}}>
                                 {section.SectionName}
                             </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Chip 
+                        <Box sx={{display: 'flex', gap: 1}}>
+                            <Chip
                                 label={getTypeLabel(section.SectionType)}
                                 size="small"
-                                sx={{ 
+                                sx={{
                                     backgroundColor: 'primary.light',
                                     color: 'white',
                                     fontWeight: 500
                                 }}
                             />
-                            <Chip 
+                            <Chip
                                 label={`順序: ${section.SectionOrder}`}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontWeight: 500 }}
+                                sx={{fontWeight: 500}}
                             />
                         </Box>
                     </Box>
                 </AccordionSummary>
 
-                <IconButton 
+                <IconButton
                     color="error"
                     onClick={(e) => {
                         e.stopPropagation()
@@ -165,7 +165,7 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                         }
                     }}
                     title="この質問を削除"
-                    sx={{ 
+                    sx={{
                         mr: 2,
                         '&:hover': {
                             backgroundColor: 'error.light',
@@ -173,15 +173,15 @@ export function SortableSection({ section, onDelete, onUpdate }: SortableSection
                         }
                     }}
                 >
-                    <DeleteIcon />
+                    <DeleteIcon/>
                 </IconButton>
             </Box>
 
-            <AccordionDetails sx={{ 
+            <AccordionDetails sx={{
                 backgroundColor: '#fafafa',
                 borderTop: '1px solid #e0e0e0'
             }}>
-                <SectionEditor 
+                <SectionEditor
                     section={section}
                     onUpdate={onUpdate}
                 />

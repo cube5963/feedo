@@ -1,36 +1,18 @@
 "use client"
-import { Section } from './types'
-import { SortableSection } from './SortableSection'
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-} from '@dnd-kit/core'
-import {
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { Typography, Box } from '@mui/material'
+import {SectionListProps} from '@/utils/feedo/types'
+import {SortableSection} from './SortableSection'
+import {closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors,} from '@dnd-kit/core'
+import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,} from '@dnd-kit/sortable'
+import {Box, Typography} from '@mui/material'
 
-interface SectionListProps {
-    sections: Section[]
-    currentFormId: string | null
-    onDelete: (id: string) => void
-    onUpdate: (sectionId: string, updatedSection: Partial<Section>) => void
-    onReorder: (event: any) => void
-}
 
-export function SectionList({ 
-    sections, 
-    currentFormId, 
-    onDelete, 
-    onUpdate, 
-    onReorder 
-}: SectionListProps) {
+export function SectionList({
+                                sections,
+                                currentFormId,
+                                onDelete,
+                                onUpdate,
+                                onReorder
+                            }: SectionListProps) {
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -39,11 +21,11 @@ export function SectionList({
     )
 
     return (
-        <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>
+        <Box sx={{maxWidth: '100%', mx: 'auto'}}>
+            <Typography variant="h5" sx={{mb: 2}}>
                 質問一覧
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
                 ドラッグして順序を変更できます
             </Typography>
             {sections?.length === 0 ? (
@@ -51,12 +33,12 @@ export function SectionList({
                     まだ質問がありません。
                 </Typography>
             ) : (
-                <DndContext 
+                <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={onReorder}
                 >
-                    <SortableContext 
+                    <SortableContext
                         items={sections.map(s => s.SectionUUID!)}
                         strategy={verticalListSortingStrategy}
                     >
