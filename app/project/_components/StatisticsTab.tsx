@@ -62,7 +62,6 @@ export default function StatisticsTab({projectId, supabase}: StatisticsTabProps)
 
     // 特定のセクションの統計データを再取得する関数
     const refreshSectionStatistics = useCallback(async (sectionUUID: string) => {
-        console.log('🔄 Refreshing section statistics for:', sectionUUID);
         setSectionRefreshing(prev => ({...prev, [sectionUUID]: true}));
 
         try {
@@ -74,19 +73,16 @@ export default function StatisticsTab({projectId, supabase}: StatisticsTabProps)
             setStatistics(prev => {
                 if (prev) {
                     section = prev.questionStats.find(qs => qs.section.SectionUUID === sectionUUID)?.section;
-                    console.log('📋 Found section:', section?.SectionName);
                 }
                 return prev;
             });
 
             // セクションが見つからない場合は全体を更新
             if (!section) {
-                console.log('❌ Section not found, refreshing all data');
                 await handleRefreshData();
                 return;
             }
 
-            console.log('📊 Fetching answers for section:', sectionUUID);
 
             const {data: responses, error: responsesError} = await supabase
                 .from('Answer')
@@ -109,11 +105,9 @@ export default function StatisticsTab({projectId, supabase}: StatisticsTabProps)
 
             const uniqueResponses = Object.values(uniqueResponsesByAnswerUUID);
 
-            console.log(`📈 Found ${responseData.length} responses for section`);
 
             // 統計を再計算
             const newStatistics = calculateQuestionStatistics(section, uniqueResponses);
-            console.log('🧮 Calculated new statistics:', newStatistics);
 
             // 該当セクションの統計のみを更新
             setStatistics(prev => {
@@ -121,7 +115,6 @@ export default function StatisticsTab({projectId, supabase}: StatisticsTabProps)
 
                 const updatedQuestionStats = prev.questionStats.map(qs => {
                     if (qs.section.SectionUUID === sectionUUID) {
-                        console.log(`✅ Updating statistics for section: ${qs.section.SectionName}`);
                         return {
                             ...qs,
                             responseCount: uniqueResponses.length,
@@ -148,10 +141,6 @@ export default function StatisticsTab({projectId, supabase}: StatisticsTabProps)
                     questionStats: updatedQuestionStats
                 };
 
-                console.log('📊 Updated overall statistics:', {
-                    totalResponses: updatedStats.totalResponses,
-                    responseRate: updatedStats.responseRate
-                });
 
                 return updatedStats;
             });
@@ -162,7 +151,6 @@ export default function StatisticsTab({projectId, supabase}: StatisticsTabProps)
                 [sectionUUID]: new Date()
             }));
 
-            console.log(`✅ Section ${sectionUUID} statistics updated successfully`);
 
         } catch (error) {
             console.error('❌ セクション統計更新エラー:', error);

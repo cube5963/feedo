@@ -48,14 +48,12 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
                 if (formData && formData.length > 0) {
                     const formIds = formData.map((form: { FormUUID: string }) => form.FormUUID)
                     setAvailableFormIds(formIds)
-                    console.log('有効なForm一覧:', formData)
+                
 
                     if (!currentFormId || !formIds.includes(currentFormId)) {
                         setCurrentFormId(formIds[0])
-                        console.log('FormUUIDを自動設定:', formIds[0])
                     }
                 } else {
-                    console.log('Formテーブルにデータがありません')
 
                     const {data: newForm, error: createError} = await supabase
                         .from('Form')
@@ -77,7 +75,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
                         setAvailableFormIds([newForm.FormUUID])
                         setCurrentFormId(newForm.FormUUID)
                         setMessage('デフォルトフォームを自動作成しました。')
-                        console.log('自動作成されたForm:', newForm)
                     }
                 }
 
@@ -94,7 +91,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
                         console.error('Sectionデータ取得エラー:', sectionError)
                         setMessage(`Sectionデータの取得に失敗しました: ${sectionError.message}`)
                     } else {
-                        console.log('取得したSectionデータ:', sectionData)
                         setSections(sectionData || [])
                     }
                 }
@@ -115,7 +111,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
 
         try {
 
-            console.log('保存しようとするデータ:', sectionData)
 
             const {data, error} = await supabase
                 .from('Section')
@@ -166,7 +161,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
 
         try {
 
-            console.log('削除しようとするSectionUUID:', sectionId)
 
             const {error} = await supabase
                 .from('Section')
@@ -196,7 +190,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
 
         try {
 
-            console.log('更新しようとするセクション:', {sectionId, updatedSection})
 
             const {error} = await supabase
                 .from('Section')
@@ -214,7 +207,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
                     ? {...section, ...updatedSection}
                     : section
             ))
-            console.log('質問が正常に更新されました')
 
             await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -283,7 +275,6 @@ export default function FormManager({initialSections = [], formId, hideFormSelec
             }
 
             if (newForm) {
-                console.log('新しいフォームが作成されました:', newForm)
                 router.push(`/project/${newForm.FormUUID}`)
             }
         } catch (error: any) {
