@@ -13,14 +13,11 @@ export function formatSafeDate (dateString: string | null | undefined, fieldName
             // 秒単位のUnix timestampの場合（桁数が少ない）
             if (timestamp < 10000000000) {
                 date = new Date(timestamp * 1000);
-                console.log(`${fieldName || 'Date'} Unix秒timestamp検出:`, timestamp, '→', date);
             } else {
                 date = new Date(timestamp);
-                console.log(`${fieldName || 'Date'} Unixミリ秒timestamp検出:`, timestamp, '→', date);
             }
         } else {
             date = new Date(dateString);
-            console.log(`${fieldName || 'Date'} 文字列日付:`, dateString, '→', date);
         }
 
         // 無効な日付や1970年代（Unix timestamp 0近辺）をチェック
@@ -56,8 +53,6 @@ export async function fixAIFormDates (formsToFix: any[],supabase: any): Promise<
 
             if (updateError) {
                 console.error(`フォーム ${form.FormName} の日付更新エラー:`, updateError);
-            } else {
-                console.log(`フォーム ${form.FormName} の日付を修正しました`);
             }
         } catch (error) {
             console.error(`フォーム ${form.FormName} の修正中にエラー:`, error);

@@ -91,7 +91,6 @@ export default function AI(){
             }
 
             const data = await response.json();
-            console.log("AI APIレスポンス詳細:", data);
 
             if(data.status_code == 200){
                 setSuccess("フォームが正常に作成されました！");

@@ -103,7 +103,6 @@ export default function Project() {
         const fetchImages = async () => {
             // ImgIDが空でも取得する
             const targets = forms.filter(f => !imageCacheRef.current[f.FormUUID]);
-            console.log("fetchImages targets:", targets);
 
             if (targets.length === 0) {
                 imagesInitializedRef.current = true;
@@ -113,7 +112,6 @@ export default function Project() {
             const promises = targets.map(f =>
                 getImage(f.FormUUID, supabase)
                     .then(url => {
-                        console.log(`getImage result for ${f.FormUUID}:`, url);
                         return { id: f.FormUUID, url };
                     })
                     .catch(() => ({ id: f.FormUUID, url: null }))
@@ -139,7 +137,6 @@ export default function Project() {
                         if (v) imageMap[k] = v;
                     });
                     setFormImages(imageMap);
-                    console.log("Updated formImages:", imageMap);
                 }
             } finally {
                 imagesInitializedRef.current = true;
@@ -165,16 +162,12 @@ export default function Project() {
         const newForm = await createForm(user, supabase);
         setLoading(false);
 
-        if (newForm == null) {
-            console.log("エラーが発生しました");
-        } else {
             if (ai) {
                 router.push(`/project/ai/${newForm.FormUUID}`);
             } else {
                 setForms(prev => [newForm, ...prev]);
                 router.push(`/project/${newForm.FormUUID}`);
             }
-        }
     };
 
     const handleDeleteForm = async (formId: string, formName: string, event: React.MouseEvent) => {
