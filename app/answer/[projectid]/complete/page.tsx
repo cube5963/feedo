@@ -5,7 +5,6 @@ import { useParams} from "next/navigation";
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
 import Header from "@/app/_components/Header";
 import {SupabaseAuthClient} from "@/utils/supabase/user/user";
-const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
 export default function AnswerCompletePage() {
     const params = useParams();
@@ -13,6 +12,7 @@ export default function AnswerCompletePage() {
     const [formData, setFormData] = useState<{ FormMessage?: string; FormName?: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { supabase, isAuth, loading: authLoading, user } = SupabaseAuthClient();
 
     useEffect(() => {
         if (!supabase || authLoading) return;

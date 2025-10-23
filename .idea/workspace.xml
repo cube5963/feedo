@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations">
+    <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="feat: Add uuid package for unique identifier generation in form handling">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/answer/[projectid]/[questionid]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/answer/[projectid]/[questionid]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/answer/[projectid]/complete/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/answer/[projectid]/complete/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,6 +81,7 @@
     &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;npm.Next.js: サーバーサイド.executor&quot;: &quot;Run&quot;,
+    &quot;npm.build.executor&quot;: &quot;Run&quot;,
     &quot;npm.install.executor&quot;: &quot;Run&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\mumei\\Desktop\\work\\cube\\feedo\\node_modules\\typescript\\lib&quot;,
@@ -94,7 +93,7 @@
       <recent name="C:\Users\mumei\Desktop\work\cube\feedo" />
     </key>
   </component>
-  <component name="RunManager" selected="npm.Next.js: サーバーサイド">
+  <component name="RunManager" selected="npm.start">
     <configuration name="Next.js: クライアントサイドのデバッグ" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
     </configuration>
@@ -108,6 +107,16 @@
       <envs />
       <method v="2" />
     </configuration>
+    <configuration name="build" type="js.build_tools.npm" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="build" />
+      </scripts>
+      <node-interpreter value="$APPLICATION_CONFIG_DIR$/node/versions/22.21.0/node" />
+      <envs />
+      <method v="2" />
+    </configuration>
     <configuration name="install" type="js.build_tools.npm" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/package.json" />
       <command value="install" />
@@ -115,8 +124,20 @@
       <envs />
       <method v="2" />
     </configuration>
+    <configuration name="start" type="js.build_tools.npm" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="start" />
+      </scripts>
+      <node-interpreter value="$APPLICATION_CONFIG_DIR$/node/versions/22.21.0/node" />
+      <envs />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="JavaScript デバッグ.Next.js: クライアントサイドのデバッグ" />
+      <item itemvalue="npm.start" />
+      <item itemvalue="npm.build" />
       <item itemvalue="npm.install" />
       <item itemvalue="npm.Next.js: サーバーサイド" />
     </list>
@@ -143,7 +164,8 @@
       <workItem from="1757304440804" duration="36000" />
       <workItem from="1759720409293" duration="3931000" />
       <workItem from="1761200155021" duration="1064000" />
-      <workItem from="1761201511679" duration="316000" />
+      <workItem from="1761201511679" duration="3350000" />
+      <workItem from="1761206512722" duration="343000" />
     </task>
     <task id="LOCAL-00001" summary="feat: add new form and survey components, including navigation and statistics handling">
       <option name="closed" value="true" />
@@ -257,7 +279,15 @@
       <option name="project" value="LOCAL" />
       <updated>1759724687548</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="feat: Add uuid package for unique identifier generation in form handling">
+      <option name="closed" value="true" />
+      <created>1761201926290</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1761201926290</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -277,7 +307,8 @@
     <MESSAGE value="feat: Add JWT_SECRET environment variable to Dockerfile and update workspace.xml for task management" />
     <MESSAGE value="feat: Update Dockerfile to use ARG for environment variables and modify workspace.xml for task management" />
     <MESSAGE value="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix: Reorder RUN command in Dockerfile to ensure build process executes after ARG declarations" />
+    <MESSAGE value="feat: Add uuid package for unique identifier generation in form handling" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Add uuid package for unique identifier generation in form handling" />
   </component>
   <component name="VgoProject">
     <integration-enabled>false</integration-enabled>
