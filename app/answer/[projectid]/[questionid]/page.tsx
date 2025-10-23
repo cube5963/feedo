@@ -10,6 +10,7 @@ import AnswerNavigationButtons from '@/app/answer/_components/AnswerNavigationBu
 import {SupabaseAuthClient} from "@/utils/supabase/user/user";
 import {isFirstAnswer} from "@/utils/feedo/answer/isFirst";
 import Header from "@/app/_components/Header";
+import {v4 as uuidv4} from "uuid";
 
 interface FormData {
     FormUUID: string;
@@ -96,7 +97,7 @@ export default function AnswerQuestionPage() {
             if (urlAnswerUUID) {
                 setAnswerUUID(urlAnswerUUID);
             } else if (currentIndex === 0 && !answerUUID) {
-                const uuid = crypto.randomUUID();
+                const uuid = uuidv4();
                 setAnswerUUID(uuid);
             }
         };
