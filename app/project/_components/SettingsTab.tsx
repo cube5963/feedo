@@ -96,7 +96,9 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
             return
         }
 
-        router.push(`/answer/${formId}/${uuid}`)
+        const url = `/answer/${formId}/${uuid}`
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
+        if (newWindow) newWindow.opener = null
     }
 
     // プレビューページへ
@@ -109,7 +111,9 @@ export default function SettingsTab({formId, supabase, message, setMessage}: Set
             return
         }
 
-        router.push(`/answer/preview/${formId}/${uuid}`)
+        const url = `/answer/preview/${formId}/${uuid}`
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
+        if (newWindow) newWindow.opener = null
     }
 
     // 画像削除
