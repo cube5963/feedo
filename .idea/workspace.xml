@@ -136,10 +136,10 @@
     </configuration>
     <list>
       <item itemvalue="JavaScript デバッグ.Next.js: クライアントサイドのデバッグ" />
-      <item itemvalue="npm.start" />
+      <item itemvalue="npm.Next.js: サーバーサイド" />
       <item itemvalue="npm.build" />
       <item itemvalue="npm.install" />
-      <item itemvalue="npm.Next.js: サーバーサイド" />
+      <item itemvalue="npm.start" />
     </list>
   </component>
   <component name="SharedIndexes">

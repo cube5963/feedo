@@ -139,7 +139,7 @@ export default function AnswerQuestionPage() {
             const result = await res.json();
             const data = result.data;
             const error = result.error;
-            const env_res = await fetch('/api/env?data=AI_API_URL');
+            const env_res = await fetch('/api/env?type=AI_API_URL');
             const env_result = await env_res.json();
             if (error) {
                 console.error('回答保存エラー:', JSON.stringify(error));
