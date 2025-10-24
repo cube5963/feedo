@@ -117,7 +117,7 @@ export default function PreviewQuestionPage() {
 
     const handleComplete = () => {
         // 完了処理（回答の保存など）
-        router.push(`/preview/${projectId}/complete`);
+        router.push(`/answer/preview/${projectId}/complete`);
     };
 
     const handleBack = () => {
