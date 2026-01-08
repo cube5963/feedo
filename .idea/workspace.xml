@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="da3038f4-9ac2-463a-9aa3-a550ec0eec5a" name="変更" comment="feat: Add uuid package for unique identifier generation in form handling">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/answer/preview/[projectid]/[questionid]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/answer/preview/[projectid]/[questionid]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,7 +38,7 @@
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/cube5963/feedo.git",
-    "accountId": "1412056d-d313-470a-b897-d63f66a041bf"
+    "accountId": "fc49b712-bdab-42b2-ac96-48d5d00369d4"
   }
 }]]></component>
   <component name="GoLibraries">
@@ -93,17 +93,14 @@
       <recent name="C:\Users\mumei\Desktop\work\cube\feedo" />
     </key>
   </component>
-  <component name="RunManager" selected="npm.start">
+  <component name="RunManager" selected="npm.Next.js: サーバーサイド">
     <configuration name="Next.js: クライアントサイドのデバッグ" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
     </configuration>
     <configuration name="Next.js: サーバーサイド" type="js.build_tools.npm">
       <package-json value="$PROJECT_DIR$/package.json" />
-      <command value="run" />
-      <scripts>
-        <script value="dev" />
-      </scripts>
-      <node-interpreter value="$APPLICATION_CONFIG_DIR$/node/versions/22.21.0/node" />
+      <command value="update" />
+      <node-interpreter value="$APPLICATION_CONFIG_DIR$/node/versions/24.12.0/node" />
       <envs />
       <method v="2" />
     </configuration>
@@ -167,6 +164,7 @@
       <workItem from="1761201511679" duration="3350000" />
       <workItem from="1761206512722" duration="343000" />
       <workItem from="1761265227674" duration="1627000" />
+      <workItem from="1767851202229" duration="174000" />
     </task>
     <task id="LOCAL-00001" summary="feat: add new form and survey components, including navigation and statistics handling">
       <option name="closed" value="true" />
